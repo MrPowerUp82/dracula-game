@@ -4,7 +4,9 @@ import { Pool } from '../core/Pool';
 import { Player } from '../entities/Player';
 import { Enemy } from '../entities/Enemy';
 import { Pickup } from '../entities/Pickup';
-import { MAX_ENEMIES, MAX_PICKUPS } from '../config/gameConfig';
+import { Attack } from '../entities/Attack';
+import { PowerRoster } from '../powers/PowerRoster';
+import { MAX_ENEMIES, MAX_PICKUPS, MAX_PROJECTILES } from '../config/gameConfig';
 
 export interface WorldTime {
   /** Tempo total decorrido na run, em ms. */
@@ -36,6 +38,8 @@ export interface World {
   player: Player;
   enemies: Pool<Enemy>;
   pickups: Pool<Pickup>;
+  attacks: Pool<Attack>;
+  powers: PowerRoster;
   progression: Progression;
 }
 
@@ -49,6 +53,8 @@ export function createWorld(seed: number): World {
     player,
     enemies: new Pool<Enemy>(() => new Enemy(), MAX_ENEMIES),
     pickups: new Pool<Pickup>(() => new Pickup(), MAX_PICKUPS),
+    attacks: new Pool<Attack>(() => new Attack(), MAX_PROJECTILES),
+    powers: new PowerRoster(),
     progression: { level: 1, xp: 0 },
   };
 }

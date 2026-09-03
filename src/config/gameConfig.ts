@@ -41,3 +41,8 @@ export const CLAW_DAMAGE = 6;
 
 /** Velocidade de atração das gemas magnetizadas, em px/s. */
 export const PICKUP_MAGNET_SPEED = 220;
+
+/** Lado (px) da textura de anel usada para desenhar auras; o sprite é escalado. */
+export const AURA_TEX_SIZE = 96;
+/** i-frames padrão de um dash, em ms (fallback do mist-form). */
+export const DASH_DEFAULT_IFRAME_MS = 250;
