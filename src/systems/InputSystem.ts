@@ -8,6 +8,8 @@ import type { System } from './System';
 export interface InputSource {
   /** Eixo por componente; a magnitude pode passar de 1 na diagonal. */
   getAxis(): { x: number; y: number };
+  /** `true` uma vez por pressionamento da tecla de dash (Espaço). */
+  consumeDash(): boolean;
 }
 
 export class InputSystem implements System {

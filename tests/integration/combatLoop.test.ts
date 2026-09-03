@@ -16,6 +16,7 @@ function circlingInput(world: ReturnType<typeof makeWorld>): InputSource {
       const t = world.time.elapsedMs / 1000;
       return { x: Math.cos(t), y: Math.sin(t) };
     },
+    consumeDash: () => false,
   };
 }
 

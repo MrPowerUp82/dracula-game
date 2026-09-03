@@ -4,7 +4,7 @@ import { MovementSystem } from '../../src/systems/MovementSystem';
 import { InputSystem, type InputSource } from '../../src/systems/InputSystem';
 
 function fixedInput(x: number, y: number): InputSource {
-  return { getAxis: () => ({ x, y }) };
+  return { getAxis: () => ({ x, y }), consumeDash: () => false };
 }
 
 describe('InputSystem + MovementSystem', () => {

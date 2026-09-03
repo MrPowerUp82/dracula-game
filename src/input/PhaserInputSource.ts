@@ -7,6 +7,7 @@ export class PhaserInputSource implements InputSource {
   private readonly a: Phaser.Input.Keyboard.Key;
   private readonly s: Phaser.Input.Keyboard.Key;
   private readonly d: Phaser.Input.Keyboard.Key;
+  private readonly space: Phaser.Input.Keyboard.Key;
   private readonly cursors: Phaser.Types.Input.Keyboard.CursorKeys;
 
   constructor(scene: Phaser.Scene) {
@@ -15,7 +16,12 @@ export class PhaserInputSource implements InputSource {
     this.a = kb.addKey(Phaser.Input.Keyboard.KeyCodes.A);
     this.s = kb.addKey(Phaser.Input.Keyboard.KeyCodes.S);
     this.d = kb.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+    this.space = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.cursors = kb.createCursorKeys();
+  }
+
+  consumeDash(): boolean {
+    return Phaser.Input.Keyboard.JustDown(this.space);
   }
 
   getAxis(): { x: number; y: number } {
