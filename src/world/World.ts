@@ -1,6 +1,10 @@
 import { Rng } from '../core/Rng';
 import { EventBus } from '../core/EventBus';
+import { Pool } from '../core/Pool';
 import { Player } from '../entities/Player';
+import { Enemy } from '../entities/Enemy';
+import { Pickup } from '../entities/Pickup';
+import { MAX_ENEMIES, MAX_PICKUPS } from '../config/gameConfig';
 
 export interface WorldTime {
   /** Tempo total decorrido na run, em ms. */
@@ -14,6 +18,12 @@ export interface Camera {
   y: number;
 }
 
+export interface Progression {
+  level: number;
+  /** XP acumulado dentro do nível atual. */
+  xp: number;
+}
+
 /**
  * Agregado de todo o estado de uma run. É o único objeto que os sistemas
  * recebem. Sem Phaser — a RunScene lê daqui para desenhar.
@@ -24,6 +34,9 @@ export interface World {
   time: WorldTime;
   camera: Camera;
   player: Player;
+  enemies: Pool<Enemy>;
+  pickups: Pool<Pickup>;
+  progression: Progression;
 }
 
 export function createWorld(seed: number): World {
@@ -34,6 +47,9 @@ export function createWorld(seed: number): World {
     time: { elapsedMs: 0, deltaMs: 0 },
     camera: { x: player.pos.x, y: player.pos.y },
     player,
+    enemies: new Pool<Enemy>(() => new Enemy(), MAX_ENEMIES),
+    pickups: new Pool<Pickup>(() => new Pickup(), MAX_PICKUPS),
+    progression: { level: 1, xp: 0 },
   };
 }
 
