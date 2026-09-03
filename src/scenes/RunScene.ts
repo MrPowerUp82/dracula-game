@@ -15,8 +15,8 @@ import { MEMORY_PLACEHOLDER } from '../data/memories';
 export class RunScene extends Phaser.Scene {
   private world!: World;
   private systems: System[] = [];
-  private playerSprite!: Phaser.GameObjects.Image;
-  private enemySprites: Phaser.GameObjects.Image[] = [];
+  private playerSprite!: Phaser.GameObjects.Sprite;
+  private enemySprites: Phaser.GameObjects.Sprite[] = [];
   private gemSprites: Phaser.GameObjects.Image[] = [];
   private debugText!: Phaser.GameObjects.Text;
 
@@ -42,7 +42,14 @@ export class RunScene extends Phaser.Scene {
     ];
 
     this.add.grid(0, 0, 4000, 4000, 32, 32, 0x140d1c, 1, 0x241a30, 1).setDepth(-10);
-    this.playerSprite = this.add.image(0, 0, 'dev-player').setDepth(5);
+
+    this.registerAnim('dracula-idle', 5, -1);
+    this.registerAnim('dracula-walk', 9, -1);
+    this.registerAnim('crawler-walk', 7, -1);
+
+    const hasDracula = this.textures.exists('dracula-idle');
+    this.playerSprite = this.add.sprite(0, 0, hasDracula ? 'dracula-idle' : 'dev-player').setDepth(5);
+    if (hasDracula) this.playerSprite.play('dracula-idle');
 
     // TEMPORÁRIO: HUD real entra no Plano 5.
     this.debugText = this.add
@@ -55,15 +62,10 @@ export class RunScene extends Phaser.Scene {
     advanceTime(this.world, delta);
     for (const system of this.systems) system.update(this.world, delta);
 
-    this.playerSprite.setPosition(this.world.player.pos.x, this.world.player.pos.y);
+    this.syncPlayer();
     this.cameras.main.centerOn(this.world.camera.x, this.world.camera.y);
-
-    this.syncSprites(this.enemySprites, 'dev-enemy', (draw) => {
-      this.world.enemies.forEachActive((e) => draw(e.pos.x, e.pos.y));
-    });
-    this.syncSprites(this.gemSprites, 'dev-gem', (draw) => {
-      this.world.pickups.forEachActive((g) => draw(g.pos.x, g.pos.y));
-    });
+    this.syncEnemies();
+    this.syncGems();
 
     const p = this.world.player;
     this.debugText.setText(
@@ -72,22 +74,63 @@ export class RunScene extends Phaser.Scene {
     );
   }
 
-  /** Reaproveita um array de sprites: mostra um por item desenhado, esconde o resto. */
-  private syncSprites(
-    sprites: Phaser.GameObjects.Image[],
-    texture: string,
-    forEach: (draw: (x: number, y: number) => void) => void,
-  ): void {
+  private syncPlayer(): void {
+    const p = this.world.player;
+    this.playerSprite.setPosition(p.pos.x, p.pos.y);
+    if (Math.abs(p.vel.x) > 1) this.playerSprite.setFlipX(p.vel.x < 0);
+
+    if (!this.textures.exists('dracula-idle')) return;
+    const moving = Math.hypot(p.vel.x, p.vel.y) > 1;
+    const want = moving ? 'dracula-walk' : 'dracula-idle';
+    if (this.playerSprite.anims.getName() !== want) this.playerSprite.play(want, true);
+  }
+
+  private syncEnemies(): void {
+    const px = this.world.player.pos.x;
+    const hasCrawler = this.textures.exists('crawler-walk');
     let i = 0;
-    forEach((x, y) => {
-      let s = sprites[i];
+    this.world.enemies.forEachActive((e) => {
+      let s = this.enemySprites[i];
       if (!s) {
-        s = this.add.image(0, 0, texture).setDepth(3);
-        sprites[i] = s;
+        s = this.add.sprite(0, 0, 'dev-enemy').setDepth(3);
+        this.enemySprites[i] = s;
       }
-      s.setVisible(true).setPosition(x, y);
+      const useArt = e.defId === 'crawler' && hasCrawler;
+      const tex = useArt ? 'crawler-walk' : 'dev-enemy';
+      if (s.texture.key !== tex) {
+        s.setTexture(tex);
+        if (useArt) s.play('crawler-walk', true);
+        else s.anims.stop();
+      }
+      s.setVisible(true).setPosition(e.pos.x, e.pos.y);
+      s.setFlipX(px < e.pos.x);
       i++;
     });
-    for (let j = i; j < sprites.length; j++) sprites[j].setVisible(false);
+    for (let j = i; j < this.enemySprites.length; j++) this.enemySprites[j].setVisible(false);
+  }
+
+  private syncGems(): void {
+    let i = 0;
+    this.world.pickups.forEachActive((g) => {
+      let s = this.gemSprites[i];
+      if (!s) {
+        s = this.add.image(0, 0, 'dev-gem').setDepth(2);
+        this.gemSprites[i] = s;
+      }
+      s.setVisible(true).setPosition(g.pos.x, g.pos.y);
+      i++;
+    });
+    for (let j = i; j < this.gemSprites.length; j++) this.gemSprites[j].setVisible(false);
+  }
+
+  /** Cria uma animação a partir de um spritesheet, se ele existir e ainda não houver. */
+  private registerAnim(key: string, frameRate: number, repeat: number): void {
+    if (this.anims.exists(key) || !this.textures.exists(key)) return;
+    this.anims.create({
+      key,
+      frames: this.anims.generateFrameNumbers(key, { start: 0, end: -1 }),
+      frameRate,
+      repeat,
+    });
   }
 }

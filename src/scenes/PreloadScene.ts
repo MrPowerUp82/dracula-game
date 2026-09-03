@@ -1,13 +1,47 @@
 import Phaser from 'phaser';
 
+interface SheetMeta {
+  frameWidth: number;
+  frameHeight: number;
+  frameCount: number;
+}
+type SpriteManifest = Record<string, SheetMeta>;
+
+/**
+ * Carrega os spritesheets processados (public/sprites/, gerados por
+ * `node tools/process-sprites.mjs`). Duas fases: primeiro o manifest com as
+ * dimensões de frame, depois os próprios sheets. Texturas `dev-*` ficam como
+ * fallback caso algum sheet falte.
+ */
 export class PreloadScene extends Phaser.Scene {
   constructor() {
     super('Preload');
   }
 
   preload(): void {
-    // TEMPORÁRIO: spritesheets reais (docs/PROMPTS_GEMINI.md) entram no Plano 5.
-    // Texturas placeholder para o loop ser jogável.
+    this.load.json('sprite-manifest', 'sprites/manifest.json');
+    this.makeDevTextures();
+  }
+
+  create(): void {
+    const manifest = this.cache.json.get('sprite-manifest') as SpriteManifest | undefined;
+    if (!manifest) {
+      this.scene.start('Run');
+      return;
+    }
+
+    for (const [key, meta] of Object.entries(manifest)) {
+      this.load.spritesheet(key, `sprites/${key}.png`, {
+        frameWidth: meta.frameWidth,
+        frameHeight: meta.frameHeight,
+      });
+    }
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => this.scene.start('Run'));
+    this.load.start();
+  }
+
+  /** Placeholders gerados em runtime — usados enquanto não há arte real. */
+  private makeDevTextures(): void {
     const player = this.add.graphics();
     player.fillStyle(0x1a1420, 1);
     player.fillRect(0, 0, 12, 20);
@@ -29,9 +63,5 @@ export class PreloadScene extends Phaser.Scene {
     gem.fillRect(0, 0, 6, 6);
     gem.generateTexture('dev-gem', 6, 6);
     gem.destroy();
-  }
-
-  create(): void {
-    this.scene.start('Run');
   }
 }

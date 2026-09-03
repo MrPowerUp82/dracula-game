@@ -1,0 +1,17 @@
+{
+  "dracula-idle": {
+    "frameWidth": 41,
+    "frameHeight": 64,
+    "frameCount": 4
+  },
+  "dracula-walk": {
+    "frameWidth": 57,
+    "frameHeight": 64,
+    "frameCount": 5
+  },
+  "crawler-walk": {
+    "frameWidth": 52,
+    "frameHeight": 56,
+    "frameCount": 7
+  }
+}
