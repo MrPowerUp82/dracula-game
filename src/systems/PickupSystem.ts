@@ -11,7 +11,7 @@ export class PickupSystem implements System {
   update(world: World, deltaMs: number): void {
     const dt = deltaMs / 1000;
     const p = world.player;
-    const magnetRange = p.stats.pickupRadius;
+    const magnetRange = p.stats.get('pickupRadius');
     const collectDist = p.radius + 2;
 
     world.pickups.forEachActive((gem) => {

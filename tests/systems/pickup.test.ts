@@ -6,7 +6,7 @@ import { xpToNext } from '../../src/progression/xp';
 describe('PickupSystem', () => {
   it('magnetiza a gema dentro do pickupRadius e a puxa para o jogador', () => {
     const world = createWorld(1);
-    world.player.stats.pickupRadius = 40;
+    world.player.stats.setBase('pickupRadius', 40);
     const g = world.pickups.acquire()!;
     g.spawn('xpGem', 30, 0, 1); // dist 30 <= 40
     const sys = new PickupSystem();
@@ -17,7 +17,7 @@ describe('PickupSystem', () => {
 
   it('não magnetiza gema fora do pickupRadius', () => {
     const world = createWorld(1);
-    world.player.stats.pickupRadius = 40;
+    world.player.stats.setBase('pickupRadius', 40);
     const g = world.pickups.acquire()!;
     g.spawn('xpGem', 200, 0, 1);
     new PickupSystem().update(world, 16);

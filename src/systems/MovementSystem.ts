@@ -17,8 +17,8 @@ export class MovementSystem implements System {
       iy /= mag;
     }
 
-    player.vel.x = ix * player.stats.moveSpeed;
-    player.vel.y = iy * player.stats.moveSpeed;
+    player.vel.x = ix * player.stats.get('moveSpeed');
+    player.vel.y = iy * player.stats.get('moveSpeed');
 
     player.pos.x += player.vel.x * dt;
     player.pos.y += player.vel.y * dt;
