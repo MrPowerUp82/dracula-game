@@ -110,12 +110,14 @@ export const POWER_DEFS: Record<string, PowerDef> = {
     name: 'Vigor Carmesim',
     behavior: 'passive',
     maxLevel: 5,
+    // `might` é um stat em pontos percentuais (damageMult = 1 + might/100),
+    // então o modificador é `flat` (soma pontos), não `pct`.
     levels: [
-      { mods: [{ key: 'might', pct: 8 }, { key: 'maxHp', flat: 10 }] },
-      { mods: [{ key: 'might', pct: 16 }, { key: 'maxHp', flat: 20 }] },
-      { mods: [{ key: 'might', pct: 24 }, { key: 'maxHp', flat: 35 }] },
-      { mods: [{ key: 'might', pct: 34 }, { key: 'maxHp', flat: 50 }] },
-      { mods: [{ key: 'might', pct: 45 }, { key: 'maxHp', flat: 70 }] },
+      { mods: [{ key: 'might', flat: 8 }, { key: 'maxHp', flat: 10 }] },
+      { mods: [{ key: 'might', flat: 16 }, { key: 'maxHp', flat: 20 }] },
+      { mods: [{ key: 'might', flat: 24 }, { key: 'maxHp', flat: 35 }] },
+      { mods: [{ key: 'might', flat: 34 }, { key: 'maxHp', flat: 50 }] },
+      { mods: [{ key: 'might', flat: 45 }, { key: 'maxHp', flat: 70 }] },
     ],
   },
   'mist-form': {
