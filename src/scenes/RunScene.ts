@@ -9,8 +9,13 @@ import { EnemyMovementSystem } from '../systems/EnemyMovementSystem';
 import { PlayerAttackSystem } from '../systems/PlayerAttackSystem';
 import { ContactDamageSystem } from '../systems/ContactDamageSystem';
 import { PickupSystem } from '../systems/PickupSystem';
+import { PowerSystem } from '../systems/PowerSystem';
+import { AttackMotionSystem } from '../systems/AttackMotionSystem';
+import { AttackCollisionSystem } from '../systems/AttackCollisionSystem';
+import { DashSystem } from '../systems/DashSystem';
 import { PhaserInputSource } from '../input/PhaserInputSource';
 import { MEMORY_PLACEHOLDER } from '../data/memories';
+import { AURA_TEX_SIZE } from '../config/gameConfig';
 
 export class RunScene extends Phaser.Scene {
   private world!: World;
@@ -18,7 +23,9 @@ export class RunScene extends Phaser.Scene {
   private playerSprite!: Phaser.GameObjects.Sprite;
   private enemySprites: Phaser.GameObjects.Sprite[] = [];
   private gemSprites: Phaser.GameObjects.Image[] = [];
+  private attackSprites: Phaser.GameObjects.Image[] = [];
   private debugText!: Phaser.GameObjects.Text;
+  private pendingLevelUps = 0;
 
   constructor() {
     super('Run');
@@ -29,11 +36,15 @@ export class RunScene extends Phaser.Scene {
     this.world = createWorld(seed);
 
     const input = new PhaserInputSource(this);
-    // ordem fixa (design §5.1, subconjunto do Plano 2)
+    // ordem fixa (design §5.1, subconjunto do Plano 3)
     this.systems = [
       new SpawnDirector(MEMORY_PLACEHOLDER.timeline),
       new InputSystem(input),
       new MovementSystem(),
+      new DashSystem(input),
+      new PowerSystem(),
+      new AttackMotionSystem(),
+      new AttackCollisionSystem(),
       new EnemyMovementSystem(),
       new PlayerAttackSystem(),
       new ContactDamageSystem(),
@@ -51,11 +62,26 @@ export class RunScene extends Phaser.Scene {
     this.playerSprite = this.add.sprite(0, 0, hasDracula ? 'dracula-idle' : 'dev-player').setDepth(5);
     if (hasDracula) this.playerSprite.play('dracula-idle');
 
-    // TEMPORÁRIO: HUD real entra no Plano 5.
     this.debugText = this.add
       .text(6, 6, '', { fontFamily: 'monospace', fontSize: '10px', color: '#e8d0d0' })
       .setScrollFactor(0)
       .setDepth(100);
+
+    this.world.events.on('player:levelup', () => {
+      this.pendingLevelUps++;
+      this.maybeOpenUpgrade();
+    });
+    this.events.on('upgrade:done', () => {
+      this.pendingLevelUps = Math.max(0, this.pendingLevelUps - 1);
+      this.scene.resume();
+      this.maybeOpenUpgrade();
+    });
+  }
+
+  private maybeOpenUpgrade(): void {
+    if (this.pendingLevelUps <= 0 || this.scene.isActive('Upgrade')) return;
+    this.scene.launch('Upgrade', { world: this.world });
+    this.scene.pause();
   }
 
   update(_time: number, delta: number): void {
@@ -66,11 +92,13 @@ export class RunScene extends Phaser.Scene {
     this.cameras.main.centerOn(this.world.camera.x, this.world.camera.y);
     this.syncEnemies();
     this.syncGems();
+    this.syncAttacks();
 
     const p = this.world.player;
     this.debugText.setText(
       `HP ${Math.ceil(p.hp)}  Lv ${this.world.progression.level}  ` +
-        `XP ${this.world.progression.xp}  inimigos ${this.world.enemies.activeCount}`,
+        `XP ${this.world.progression.xp}  inimigos ${this.world.enemies.activeCount}  ` +
+        `poderes ${this.world.powers.count()}`,
     );
   }
 
@@ -78,10 +106,8 @@ export class RunScene extends Phaser.Scene {
     const p = this.world.player;
     this.playerSprite.setPosition(p.pos.x, p.pos.y);
     if (Math.abs(p.vel.x) > 1) this.playerSprite.setFlipX(p.vel.x < 0);
-
     if (!this.textures.exists('dracula-idle')) return;
-    const moving = Math.hypot(p.vel.x, p.vel.y) > 1;
-    const want = moving ? 'dracula-walk' : 'dracula-idle';
+    const want = Math.hypot(p.vel.x, p.vel.y) > 1 ? 'dracula-walk' : 'dracula-idle';
     if (this.playerSprite.anims.getName() !== want) this.playerSprite.play(want, true);
   }
 
@@ -123,7 +149,22 @@ export class RunScene extends Phaser.Scene {
     for (let j = i; j < this.gemSprites.length; j++) this.gemSprites[j].setVisible(false);
   }
 
-  /** Cria uma animação a partir de um spritesheet, se ele existir e ainda não houver. */
+  private syncAttacks(): void {
+    let i = 0;
+    this.world.attacks.forEachActive((a) => {
+      let s = this.attackSprites[i];
+      if (!s) {
+        s = this.add.image(0, 0, a.spriteKey).setDepth(4);
+        this.attackSprites[i] = s;
+      }
+      if (s.texture.key !== a.spriteKey) s.setTexture(a.spriteKey);
+      s.setVisible(true).setPosition(a.pos.x, a.pos.y);
+      s.setScale(a.spriteKey === 'dev-aura' ? (a.radius * 2) / AURA_TEX_SIZE : 1);
+      i++;
+    });
+    for (let j = i; j < this.attackSprites.length; j++) this.attackSprites[j].setVisible(false);
+  }
+
   private registerAnim(key: string, frameRate: number, repeat: number): void {
     if (this.anims.exists(key) || !this.textures.exists(key)) return;
     this.anims.create({

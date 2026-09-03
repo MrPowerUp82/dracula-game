@@ -3,6 +3,7 @@ import { LOGICAL_WIDTH, LOGICAL_HEIGHT } from './config/gameConfig';
 import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { RunScene } from './scenes/RunScene';
+import { UpgradeScene } from './scenes/UpgradeScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -16,7 +17,7 @@ const config: Phaser.Types.Core.GameConfig = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   physics: { default: 'arcade', arcade: { debug: false } },
-  scene: [BootScene, PreloadScene, RunScene],
+  scene: [BootScene, PreloadScene, RunScene, UpgradeScene],
 };
 
 const game = new Phaser.Game(config);

@@ -63,5 +63,29 @@ export class PreloadScene extends Phaser.Scene {
     gem.fillRect(0, 0, 6, 6);
     gem.generateTexture('dev-gem', 6, 6);
     gem.destroy();
+
+    const bat = this.add.graphics();
+    bat.fillStyle(0x120a16, 1);
+    bat.fillCircle(4, 4, 4);
+    bat.fillStyle(0xb31217, 1);
+    bat.fillRect(3, 3, 2, 2);
+    bat.generateTexture('dev-bat', 8, 8);
+    bat.destroy();
+
+    const spear = this.add.graphics();
+    spear.fillStyle(0xb31217, 1);
+    spear.fillRect(0, 0, 10, 3);
+    spear.fillStyle(0xf05030, 1);
+    spear.fillRect(8, 0, 2, 3);
+    spear.generateTexture('dev-spear', 10, 3);
+    spear.destroy();
+
+    const aura = this.add.graphics();
+    aura.lineStyle(3, 0xb31217, 0.8);
+    aura.strokeCircle(48, 48, 45);
+    aura.fillStyle(0xb31217, 0.08);
+    aura.fillCircle(48, 48, 45);
+    aura.generateTexture('dev-aura', 96, 96);
+    aura.destroy();
   }
 }
