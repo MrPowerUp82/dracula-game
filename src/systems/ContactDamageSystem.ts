@@ -29,5 +29,22 @@ export class ContactDamageSystem implements System {
         world.events.emit('player:died', {});
       }
     });
+
+    const b = world.boss;
+    if (b.active && b.phase !== 'intro' && world.time.elapsedMs >= p.invulnUntilMs) {
+      const dx = b.pos.x - p.pos.x;
+      const dy = b.pos.y - p.pos.y;
+      const rr = p.radius + b.radius;
+      if (dx * dx + dy * dy <= rr * rr) {
+        const dmg = Math.max(1, b.contactDamage - p.stats.get('armor'));
+        p.hp -= dmg;
+        p.invulnUntilMs = world.time.elapsedMs + IFRAME_MS;
+        world.events.emit('player:damaged', { amount: dmg, hpRemaining: p.hp });
+        if (p.hp <= 0) {
+          p.hp = 0;
+          world.events.emit('player:died', {});
+        }
+      }
+    }
   }
 }

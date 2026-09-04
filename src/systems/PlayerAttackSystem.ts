@@ -1,6 +1,7 @@
 import type { System } from './System';
 import type { World } from '../world/World';
 import { killEnemy } from '../combat/kill';
+import { damageBoss } from '../combat/boss';
 import { CLAW_COOLDOWN_MS, CLAW_RANGE, CLAW_DAMAGE } from '../config/gameConfig';
 
 /**
@@ -26,5 +27,11 @@ export class PlayerAttackSystem implements System {
       e.hp -= CLAW_DAMAGE;
       if (e.hp <= 0) killEnemy(world, e);
     });
+
+    if (world.boss.active) {
+      const bdx = world.boss.pos.x - px;
+      const bdy = world.boss.pos.y - py;
+      if (bdx * bdx + bdy * bdy <= range2) damageBoss(world, CLAW_DAMAGE);
+    }
   }
 }
