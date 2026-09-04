@@ -59,4 +59,13 @@ describe('ContactDamageSystem', () => {
     new ContactDamageSystem().update(world);
     expect(world.player.hp).toBe(100);
   });
+
+  it('armadura reduz o dano de contato (mínimo 1)', () => {
+    const world = createWorld(1);
+    world.player.stats.addModifiers('t', [{ key: 'armor', flat: 4 }]);
+    const e = world.enemies.acquire()!;
+    e.spawn(ENEMY_DEFS.crawler, world.player.pos.x, world.player.pos.y); // contactDamage 6
+    new ContactDamageSystem().update(world);
+    expect(world.player.hp).toBe(98); // 6 - 4 = 2
+  });
 });

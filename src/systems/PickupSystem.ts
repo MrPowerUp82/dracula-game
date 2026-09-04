@@ -35,7 +35,7 @@ export class PickupSystem implements System {
       const cdx = p.pos.x - gem.pos.x;
       const cdy = p.pos.y - gem.pos.y;
       if (cdx * cdx + cdy * cdy <= collectDist * collectDist) {
-        world.progression.xp += gem.value;
+        world.progression.xp += gem.value * (1 + p.stats.get('xpGain') / 100);
         world.pickups.release(gem);
         resolveLevelUps(world);
       }

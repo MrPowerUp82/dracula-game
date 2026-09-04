@@ -6,6 +6,7 @@ import { Enemy } from '../entities/Enemy';
 import { Pickup } from '../entities/Pickup';
 import { Attack } from '../entities/Attack';
 import { PowerRoster } from '../powers/PowerRoster';
+import { BASE_DRAFT_POOL } from '../data/powers';
 import { MAX_ENEMIES, MAX_PICKUPS, MAX_PROJECTILES } from '../config/gameConfig';
 
 export interface WorldTime {
@@ -41,6 +42,8 @@ export interface World {
   attacks: Pool<Attack>;
   powers: PowerRoster;
   progression: Progression;
+  /** ids de poder que podem ser sorteados nas cartas de upgrade desta run. */
+  draftPool: string[];
 }
 
 export function createWorld(seed: number): World {
@@ -56,6 +59,7 @@ export function createWorld(seed: number): World {
     attacks: new Pool<Attack>(() => new Attack(), MAX_PROJECTILES),
     powers: new PowerRoster(),
     progression: { level: 1, xp: 0 },
+    draftPool: [...BASE_DRAFT_POOL],
   };
 }
 
