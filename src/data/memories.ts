@@ -1,30 +1,63 @@
 import type { EnemyArchetype } from './enemies';
+import type { SaveDataV1 } from '../save/SaveData';
 
-/** Uma faixa da timeline de spawn: vale a partir de `tSec` até a próxima faixa. */
 export interface SpawnPhase {
   tSec: number;
-  /** Custo total de inimigos vivos que o director tenta manter nesta faixa. */
   budget: number;
   pool: EnemyArchetype[];
 }
 
 export interface MemoryDef {
   id: string;
+  name: string;
   durationSec: number;
+  /** Poder permanente concedido ao concluir a memória. */
+  rewardPowerId?: string;
   timeline: SpawnPhase[];
 }
 
-/**
- * Memória de teste do Plano 2 — só serve para exercitar o loop. As 5 memórias
- * reais (com chefe e poder fixo) entram no Plano 5.
- */
-export const MEMORY_PLACEHOLDER: MemoryDef = {
-  id: 'placeholder',
-  durationSec: 600,
-  timeline: [
-    { tSec: 0, budget: 4, pool: ['crawler'] },
-    { tSec: 60, budget: 10, pool: ['crawler', 'runner'] },
-    { tSec: 180, budget: 20, pool: ['crawler', 'runner'] },
-    { tSec: 360, budget: 34, pool: ['crawler', 'runner', 'brute'] },
-  ],
-};
+export const MEMORIES: MemoryDef[] = [
+  {
+    id: 'm1',
+    name: 'O Despertar',
+    durationSec: 300,
+    rewardPowerId: 'mist-form',
+    timeline: [
+      { tSec: 0, budget: 4, pool: ['crawler'] },
+      { tSec: 60, budget: 10, pool: ['crawler', 'runner'] },
+      { tSec: 150, budget: 18, pool: ['crawler', 'runner'] },
+      { tSec: 240, budget: 28, pool: ['crawler', 'runner', 'brute'] },
+    ],
+  },
+  {
+    id: 'm2',
+    name: 'A Fogueira',
+    durationSec: 360,
+    rewardPowerId: 'blood-rain',
+    timeline: [
+      { tSec: 0, budget: 6, pool: ['crawler', 'runner'] },
+      { tSec: 60, budget: 14, pool: ['crawler', 'runner'] },
+      { tSec: 160, budget: 24, pool: ['crawler', 'runner', 'brute'] },
+      { tSec: 260, budget: 36, pool: ['crawler', 'runner', 'brute'] },
+    ],
+  },
+  {
+    id: 'm3',
+    name: 'O Cerco',
+    durationSec: 420,
+    timeline: [
+      { tSec: 0, budget: 8, pool: ['runner', 'crawler'] },
+      { tSec: 60, budget: 18, pool: ['runner', 'crawler', 'brute'] },
+      { tSec: 180, budget: 30, pool: ['runner', 'crawler', 'brute'] },
+      { tSec: 300, budget: 44, pool: ['runner', 'crawler', 'brute'] },
+    ],
+  },
+];
+
+/** Compatibilidade: código legado usa `MEMORY_PLACEHOLDER`. */
+export const MEMORY_PLACEHOLDER = MEMORIES[0];
+
+export function memoryUnlocked(save: SaveDataV1, index: number): boolean {
+  if (index <= 0) return true;
+  return save.memoriesCleared.includes(MEMORIES[index - 1].id);
+}
