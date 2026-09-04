@@ -33,7 +33,7 @@ describe('Enemy', () => {
     expect(e.speed).toBe(0);
   });
 
-  it('a tabela de arquétipos tem os três placeholders com budgetCost >= 1', () => {
+  it('os arquétipos base continuam válidos com budgetCost >= 1', () => {
     for (const key of ['crawler', 'runner', 'brute'] as const) {
       const def = ENEMY_DEFS[key];
       expect(def.id).toBe(key);

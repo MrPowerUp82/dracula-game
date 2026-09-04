@@ -3,8 +3,8 @@ import { MEMORIES, MEMORY_PLACEHOLDER, memoryUnlocked } from '../../src/data/mem
 import { defaultSave } from '../../src/save/SaveData';
 
 describe('MEMORIES', () => {
-  it('tem 3 memórias com id/nome/timeline e MEMORY_PLACEHOLDER = a primeira', () => {
-    expect(MEMORIES).toHaveLength(3);
+  it('tem 5 memórias com id/nome/timeline e MEMORY_PLACEHOLDER = a primeira', () => {
+    expect(MEMORIES).toHaveLength(5);
     for (const m of MEMORIES) {
       expect(m.id).toBeTruthy();
       expect(m.name).toBeTruthy();

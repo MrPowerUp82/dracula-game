@@ -191,7 +191,6 @@ export class RunScene extends Phaser.Scene {
         s = this.add.sprite(0, 0, 'dev-enemy').setDepth(3);
         this.enemySprites[i] = s;
       }
-      const def = this.getEnemyDef(e.defId);
       const tex = this.enemySpriteKey(e.defId, this.memory.id);
       const useArt = this.textures.exists(tex);
       if (s.texture.key !== tex) s.setTexture(tex);
@@ -207,9 +206,33 @@ export class RunScene extends Phaser.Scene {
 
   private enemySpriteKey(defId: string, memoryId: string): string {
     const map: Record<string, Record<string, string>> = {
-      m1: { crawler: 'crawler-walk', runner: 'risen-servant', brute: 'crypt-skeleton' },
-      m2: { crawler: 'torch-peasant', runner: 'witch-hound', brute: 'flagellant-bomber' },
-      m3: { crawler: 'crawler-walk', runner: 'witch-hound', brute: 'crypt-skeleton' },
+      m1: {
+        crawler: 'crawler-walk', runner: 'risen-servant', brute: 'crypt-skeleton',
+        shooter: 'risen-servant', bomber: 'crawler-walk', flyer: 'grave-crow',
+        summoner: 'risen-servant', elite: 'elite-profaned-sentinel', swarm: 'grave-crow',
+      },
+      m2: {
+        crawler: 'torch-peasant', runner: 'witch-hound', brute: 'flagellant-bomber',
+        shooter: 'inquisitor-gunner', bomber: 'flagellant-bomber', flyer: 'grave-crow',
+        summoner: 'zealot-preacher', elite: 'elite-pyre-warden', swarm: 'grave-crow',
+      },
+      // Assets dedicados de M3–M5 ainda serão substituídos; por enquanto o
+      // gameplay já usa os arquétipos corretos com os melhores reskins atuais.
+      m3: {
+        crawler: 'torch-peasant', runner: 'witch-hound', brute: 'crypt-skeleton',
+        shooter: 'inquisitor-gunner', bomber: 'flagellant-bomber', flyer: 'grave-crow',
+        summoner: 'zealot-preacher', elite: 'elite-profaned-sentinel', swarm: 'grave-crow',
+      },
+      m4: {
+        crawler: 'risen-servant', runner: 'witch-hound', brute: 'elite-profaned-sentinel',
+        shooter: 'inquisitor-gunner', bomber: 'flagellant-bomber', flyer: 'grave-crow',
+        summoner: 'zealot-preacher', elite: 'elite-profaned-sentinel', swarm: 'fx-bat-swarm',
+      },
+      m5: {
+        crawler: 'crawler-walk', runner: 'witch-hound', brute: 'elite-pyre-warden',
+        shooter: 'inquisitor-gunner', bomber: 'flagellant-bomber', flyer: 'grave-crow',
+        summoner: 'zealot-preacher', elite: 'elite-pyre-warden', swarm: 'crawler-walk',
+      },
     };
     return map[memoryId]?.[defId] ?? this.getEnemyDef(defId)?.spriteKey ?? 'dev-enemy';
   }
@@ -256,7 +279,8 @@ export class RunScene extends Phaser.Scene {
     if (!this.bossSprite) this.bossSprite = this.add.sprite(0, 0, key).setDepth(6);
     if (this.bossSprite.texture.key !== key) this.bossSprite.setTexture(key);
     if (this.anims.exists(key) && this.bossSprite.anims.getName() !== key) this.bossSprite.play(key, true);
-    this.bossSprite.setVisible(true).setPosition(b.pos.x, b.pos.y);
+    const bossScale = b.defId === 'satan' ? 1.65 : b.defId === 'janissary-commander' ? 1.2 : 1;
+    this.bossSprite.setVisible(true).setPosition(b.pos.x, b.pos.y).setScale(bossScale);
     this.bossSprite.setFlipX(this.world.player.pos.x < b.pos.x);
   }
 

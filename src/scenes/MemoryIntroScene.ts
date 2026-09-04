@@ -7,7 +7,11 @@ export class MemoryIntroScene extends Phaser.Scene {
 
   create(data: { memory?: MemoryDef }): void {
     const memory = data.memory ?? (this.registry.get('selectedMemory') as MemoryDef);
-    const artKey = memory.id === 'm1' && this.textures.exists('art-memory1') ? 'art-memory1' : 'art-title';
+    const introArt: Record<string, string> = {
+      m1: 'art-memory1', m2: 'env-m2-far', m3: 'env-m2-far', m4: 'env-hub', m5: 'env-m2-near',
+    };
+    const candidate = introArt[memory.id] ?? 'art-title';
+    const artKey = this.textures.exists(candidate) ? candidate : 'art-title';
     if (this.textures.exists(artKey)) {
       this.add.image(LOGICAL_WIDTH / 2, LOGICAL_HEIGHT / 2, artKey)
         .setDisplaySize(LOGICAL_WIDTH, LOGICAL_HEIGHT);

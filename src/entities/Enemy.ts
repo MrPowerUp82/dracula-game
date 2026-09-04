@@ -2,10 +2,6 @@ import type { Poolable } from '../core/Pool';
 import type { Vec2 } from './Player';
 import type { EnemyArchetype, EnemyDef } from '../data/enemies';
 
-/**
- * Estado puro de um inimigo. Reciclado por um Pool. Sem Phaser — a RunScene
- * mantém sprites separados sincronizados a partir de `pos`.
- */
 export class Enemy implements Poolable {
   active = false;
   readonly pos: Vec2 = { x: 0, y: 0 };
@@ -15,8 +11,9 @@ export class Enemy implements Poolable {
   contactDamage = 0;
   xpValue = 0;
   radius = 0;
+  aiCooldownMs = 0;
+  aiPhase = 0;
 
-  /** Configura o inimigo a partir de uma definição e o coloca em (x, y). */
   spawn(def: EnemyDef, x: number, y: number): void {
     this.defId = def.id;
     this.pos.x = x;
@@ -26,9 +23,10 @@ export class Enemy implements Poolable {
     this.contactDamage = def.contactDamage;
     this.xpValue = def.xpValue;
     this.radius = def.radius;
+    this.aiCooldownMs = Math.max(250, (def.attackCooldownMs ?? 1000) * 0.5);
+    this.aiPhase = (x * 0.017 + y * 0.013) % (Math.PI * 2);
   }
 
-  /** Chamado pelo Pool em cada acquire(). Zera tudo. */
   reset(): void {
     this.defId = 'crawler';
     this.pos.x = 0;
@@ -38,5 +36,7 @@ export class Enemy implements Poolable {
     this.contactDamage = 0;
     this.xpValue = 0;
     this.radius = 0;
+    this.aiCooldownMs = 0;
+    this.aiPhase = 0;
   }
 }

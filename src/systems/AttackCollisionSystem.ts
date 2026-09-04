@@ -14,7 +14,7 @@ export class AttackCollisionSystem implements System {
     const now = world.time.elapsedMs;
 
     world.attacks.forEachActive((a) => {
-      if (a.ownerPowerId === 'boss') {
+      if (a.ownerPowerId === 'boss' || a.ownerPowerId === 'enemy') {
         this.hitPlayer(world, a, now);
         return;
       }

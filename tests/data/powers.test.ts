@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { POWER_DEFS, powerLevel } from '../../src/data/powers';
 
 describe('POWER_DEFS', () => {
-  it('tem os 5 poderes base + a evolução, cada um com levels não vazio', () => {
-    for (const id of ['bat-swarm', 'blood-spear', 'blood-rain', 'crimson-vigor', 'mist-form', 'nosferatu']) {
+  it('tem os poderes base/permanentes + a evolução, cada um com levels não vazio', () => {
+    for (const id of ['bat-swarm', 'blood-spear', 'blood-rain', 'crimson-vigor', 'mist-form', 'wolf-pack', 'night-domain', 'nosferatu']) {
       const def = POWER_DEFS[id];
       expect(def.id).toBe(id);
       expect(def.levels.length).toBeGreaterThan(0);

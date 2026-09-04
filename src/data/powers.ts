@@ -37,7 +37,7 @@ export const BAT_ORBIT_SPEED = 3.2;
 export const BAT_HIT_COOLDOWN_MS = 400;
 
 /** Poderes que podem entrar no sorteio de cartas (antes de qualquer desbloqueio, só o 1º). */
-export const BASE_DRAFT_POOL: string[] = ['bat-swarm', 'blood-spear', 'blood-rain', 'crimson-vigor', 'mist-form'];
+export const BASE_DRAFT_POOL: string[] = ['bat-swarm', 'blood-spear', 'blood-rain', 'crimson-vigor', 'mist-form', 'wolf-pack', 'night-domain'];
 
 export function powerLevel(def: PowerDef, level: number): PowerLevel {
   const clamped = Math.max(1, Math.min(level, def.levels.length));
@@ -121,6 +121,33 @@ export const POWER_DEFS: Record<string, PowerDef> = {
       { mods: [{ key: 'might', flat: 24 }, { key: 'maxHp', flat: 35 }] },
       { mods: [{ key: 'might', flat: 34 }, { key: 'maxHp', flat: 50 }] },
       { mods: [{ key: 'might', flat: 45 }, { key: 'maxHp', flat: 70 }] },
+    ],
+  },
+
+  'wolf-pack': {
+    id: 'wolf-pack',
+    name: 'Convocar a Alcateia',
+    behavior: 'orbit',
+    maxLevel: 5,
+    levels: [
+      { damage: 10, amount: 3, radius: 48 },
+      { damage: 13, amount: 3, radius: 52 },
+      { damage: 16, amount: 4, radius: 56 },
+      { damage: 20, amount: 4, radius: 60 },
+      { damage: 25, amount: 5, radius: 66 },
+    ],
+  },
+  'night-domain': {
+    id: 'night-domain',
+    name: 'Domínio da Noite',
+    behavior: 'passive',
+    maxLevel: 5,
+    levels: [
+      { mods: [{ key: 'area', flat: 12 }, { key: 'cooldown', flat: 5 }] },
+      { mods: [{ key: 'area', flat: 20 }, { key: 'cooldown', flat: 8 }] },
+      { mods: [{ key: 'area', flat: 30 }, { key: 'cooldown', flat: 12 }] },
+      { mods: [{ key: 'area', flat: 42 }, { key: 'cooldown', flat: 16 }] },
+      { mods: [{ key: 'area', flat: 55 }, { key: 'cooldown', flat: 20 }] },
     ],
   },
   'mist-form': {

@@ -28,7 +28,7 @@ export class PowerRoster {
   }
 
   equip(id: string): void {
-    if (this.map.has(id)) return;
+    if (this.map.has(id) || !POWER_DEFS[id]) return;
     this.map.set(id, { def: POWER_DEFS[id], level: 1 });
     this.revision++;
   }

@@ -58,7 +58,7 @@ export class PowerSystem implements System {
           a.hitCooldownMs = BAT_HIT_COOLDOWN_MS;
           a.lifespanMs = Infinity;
           a.ownerPowerId = def.id;
-          a.spriteKey = 'fx-bat-swarm';
+          a.spriteKey = def.id === 'wolf-pack' && world.powers.has('wolf-pack') ? 'witch-hound' : 'fx-bat-swarm';
         }
       } else if (def.behavior === 'aura') {
         const a = world.attacks.acquire();
