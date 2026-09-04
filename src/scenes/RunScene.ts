@@ -13,13 +13,20 @@ import { PowerSystem } from '../systems/PowerSystem';
 import { AttackMotionSystem } from '../systems/AttackMotionSystem';
 import { AttackCollisionSystem } from '../systems/AttackCollisionSystem';
 import { DashSystem } from '../systems/DashSystem';
+import { RegenSystem } from '../systems/RegenSystem';
 import { PhaserInputSource } from '../input/PhaserInputSource';
-import { MEMORY_PLACEHOLDER } from '../data/memories';
+import { MEMORIES, type MemoryDef } from '../data/memories';
 import { AURA_TEX_SIZE } from '../config/gameConfig';
+import { applyMetaToWorld } from '../save/applyToRun';
+import { runOutcome } from '../run/runEnd';
+import type { SaveDataV1 } from '../save/SaveData';
 
 export class RunScene extends Phaser.Scene {
   private world!: World;
   private systems: System[] = [];
+  private memory!: MemoryDef;
+  private kills = 0;
+  private ended = false;
   private playerSprite!: Phaser.GameObjects.Sprite;
   private enemySprites: Phaser.GameObjects.Sprite[] = [];
   private gemSprites: Phaser.GameObjects.Image[] = [];
@@ -32,13 +39,20 @@ export class RunScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.kills = 0;
+    this.ended = false;
+    this.pendingLevelUps = 0;
+    this.memory = (this.registry.get('selectedMemory') as MemoryDef | undefined) ?? MEMORIES[0];
+
     const seed = Math.floor(Math.random() * 0xffffffff) >>> 0;
     this.world = createWorld(seed);
 
+    const save = this.registry.get('save') as SaveDataV1 | undefined;
+    if (save) applyMetaToWorld(this.world, save);
+
     const input = new PhaserInputSource(this);
-    // ordem fixa (design §5.1, subconjunto do Plano 3)
     this.systems = [
-      new SpawnDirector(MEMORY_PLACEHOLDER.timeline),
+      new SpawnDirector(this.memory.timeline),
       new InputSystem(input),
       new MovementSystem(),
       new DashSystem(input),
@@ -48,6 +62,7 @@ export class RunScene extends Phaser.Scene {
       new EnemyMovementSystem(),
       new PlayerAttackSystem(),
       new ContactDamageSystem(),
+      new RegenSystem(),
       new PickupSystem(),
       new CameraSystem(),
     ];
@@ -67,6 +82,9 @@ export class RunScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(100);
 
+    this.world.events.on('enemy:died', () => {
+      this.kills++;
+    });
     this.world.events.on('player:levelup', () => {
       this.pendingLevelUps++;
       this.maybeOpenUpgrade();
@@ -79,12 +97,14 @@ export class RunScene extends Phaser.Scene {
   }
 
   private maybeOpenUpgrade(): void {
-    if (this.pendingLevelUps <= 0 || this.scene.isActive('Upgrade')) return;
+    if (this.ended || this.pendingLevelUps <= 0 || this.scene.isActive('Upgrade')) return;
     this.scene.launch('Upgrade', { world: this.world });
     this.scene.pause();
   }
 
   update(_time: number, delta: number): void {
+    if (this.ended) return;
+
     advanceTime(this.world, delta);
     for (const system of this.systems) system.update(this.world, delta);
 
@@ -95,11 +115,26 @@ export class RunScene extends Phaser.Scene {
     this.syncAttacks();
 
     const p = this.world.player;
+    const remaining = Math.max(
+      0,
+      this.memory.durationSec - Math.floor(this.world.time.elapsedMs / 1000),
+    );
     this.debugText.setText(
       `HP ${Math.ceil(p.hp)}  Lv ${this.world.progression.level}  ` +
-        `XP ${this.world.progression.xp}  inimigos ${this.world.enemies.activeCount}  ` +
-        `poderes ${this.world.powers.count()}`,
+        `abates ${this.kills}  ${remaining}s  poderes ${this.world.powers.count()}`,
     );
+
+    const outcome = runOutcome(this.world, this.memory.durationSec);
+    if (outcome !== 'running') {
+      this.ended = true;
+      this.scene.stop('Upgrade');
+      this.scene.start('RunEnd', {
+        memoryId: this.memory.id,
+        kills: this.kills,
+        victory: outcome === 'victory',
+        rewardPowerId: this.memory.rewardPowerId,
+      });
+    }
   }
 
   private syncPlayer(): void {
