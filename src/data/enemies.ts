@@ -9,7 +9,16 @@ export type EnemyArchetype =
   | 'elite'
   | 'swarm';
 
-export type EnemyBehavior = 'chase' | 'kite' | 'bomber' | 'sine' | 'summon';
+export type EnemyBehavior =
+  | 'chase'
+  | 'runner'
+  | 'brute'
+  | 'kite'
+  | 'bomber'
+  | 'sine'
+  | 'summon'
+  | 'elite'
+  | 'swarm';
 
 export interface EnemyDef {
   id: EnemyArchetype;
@@ -39,12 +48,12 @@ export const ENEMY_DEFS: Record<EnemyArchetype, EnemyDef> = {
     radius: 6, budgetCost: 1, spriteKey: 'crawler-walk', behavior: 'chase',
   },
   runner: {
-    id: 'runner', hp: 7, speed: 68, contactDamage: 5, xpValue: 1,
-    radius: 5, budgetCost: 1, spriteKey: 'witch-hound', behavior: 'chase',
+    id: 'runner', hp: 6, speed: 68, contactDamage: 5, xpValue: 1,
+    radius: 5, budgetCost: 1, spriteKey: 'witch-hound', behavior: 'runner',
   },
   brute: {
     id: 'brute', hp: 48, speed: 20, contactDamage: 14, xpValue: 3,
-    radius: 10, budgetCost: 3, spriteKey: 'crypt-skeleton', behavior: 'chase',
+    radius: 10, budgetCost: 3, spriteKey: 'crypt-skeleton', behavior: 'brute',
   },
   shooter: {
     id: 'shooter', hp: 18, speed: 26, contactDamage: 5, xpValue: 2,
@@ -67,10 +76,10 @@ export const ENEMY_DEFS: Record<EnemyArchetype, EnemyDef> = {
   },
   elite: {
     id: 'elite', hp: 180, speed: 24, contactDamage: 18, xpValue: 10,
-    radius: 13, budgetCost: 8, spriteKey: 'elite-profaned-sentinel', behavior: 'chase',
+    radius: 13, budgetCost: 8, spriteKey: 'elite-profaned-sentinel', behavior: 'elite',
   },
   swarm: {
     id: 'swarm', hp: 1, speed: 58, contactDamage: 2, xpValue: 1,
-    radius: 3, budgetCost: 1, spriteKey: 'grave-crow', behavior: 'sine',
+    radius: 3, budgetCost: 1, spriteKey: 'grave-crow', behavior: 'swarm',
   },
 };

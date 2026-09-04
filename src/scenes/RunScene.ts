@@ -18,7 +18,8 @@ import { BossSystem } from '../systems/BossSystem';
 import { BOSS_DEFS } from '../data/bosses';
 import { PhaserInputSource } from '../input/PhaserInputSource';
 import { MEMORIES, type MemoryDef } from '../data/memories';
-import { ENEMY_DEFS } from '../data/enemies';
+import type { EnemyArchetype } from '../data/enemies';
+import { enemyVisual } from '../data/memoryVisuals';
 import { AURA_TEX_SIZE } from '../config/gameConfig';
 import { applyMetaToWorld } from '../save/applyToRun';
 import { runOutcome } from '../run/runEnd';
@@ -41,6 +42,8 @@ export class RunScene extends Phaser.Scene {
   private debugText!: Phaser.GameObjects.Text;
   private pendingLevelUps = 0;
   private parallax!: ParallaxBackground;
+  private telegraphs!: Phaser.GameObjects.Graphics;
+  private eventUnsubscribers: Array<() => void> = [];
 
   constructor() {
     super('Run');
@@ -81,7 +84,9 @@ export class RunScene extends Phaser.Scene {
       new CameraSystem(),
     ];
 
-    this.add.grid(0, 0, 4000, 4000, 32, 32, 0x140d1c, 1, 0x241a30, 1).setDepth(-10);
+    // Base lógica atrás do parallax; antes ficava acima e ocultava toda a arte.
+    this.add.grid(0, 0, 4000, 4000, 32, 32, 0x140d1c, 1, 0x241a30, 1).setDepth(-40);
+    this.telegraphs = this.add.graphics().setDepth(5);
 
     this.registerManifestAnimations();
     this.parallax = new ParallaxBackground(this, this.memory.id);
@@ -97,24 +102,32 @@ export class RunScene extends Phaser.Scene {
 
     this.scene.launch('HUD', { world: this.world });
 
-    this.world.events.on('enemy:died', () => {
+    this.eventUnsubscribers.push(this.world.events.on('enemy:died', () => {
       this.kills++;
-    });
-    this.world.events.on('player:damaged', () => {
+    }));
+    this.eventUnsubscribers.push(this.world.events.on('player:damaged', () => {
       this.playPlayerState('dracula-hurt', 220);
-    });
-    this.world.events.on('player:levelup', () => {
+      if (save?.settings.screenShake !== false) this.cameras.main.shake(90, 0.0025);
+    }));
+    this.eventUnsubscribers.push(this.world.events.on('player:levelup', () => {
       this.playPlayerState('dracula-levelup', 520);
-    });
-    this.world.events.on('player:levelup', () => {
+    }));
+    this.eventUnsubscribers.push(this.world.events.on('player:levelup', () => {
       this.pendingLevelUps++;
       this.maybeOpenUpgrade();
-    });
+    }));
+    this.eventUnsubscribers.push(this.world.events.on('boss:phase', () => {
+      if (save?.settings.screenShake !== false) this.cameras.main.shake(180, 0.004);
+    }));
+    this.eventUnsubscribers.push(this.world.events.on('boss:died', () => {
+      if (save?.settings.screenShake !== false) this.cameras.main.shake(320, 0.007);
+    }));
     this.events.on('upgrade:done', () => {
       this.pendingLevelUps = Math.max(0, this.pendingLevelUps - 1);
       this.scene.resume();
       this.maybeOpenUpgrade();
     });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.cleanup());
   }
 
   private maybeOpenUpgrade(): void {
@@ -205,36 +218,8 @@ export class RunScene extends Phaser.Scene {
 
 
   private enemySpriteKey(defId: string, memoryId: string): string {
-    const map: Record<string, Record<string, string>> = {
-      m1: {
-        crawler: 'crawler-walk', runner: 'risen-servant', brute: 'crypt-skeleton',
-        shooter: 'risen-servant', bomber: 'crawler-walk', flyer: 'grave-crow',
-        summoner: 'risen-servant', elite: 'elite-profaned-sentinel', swarm: 'grave-crow',
-      },
-      m2: {
-        crawler: 'torch-peasant', runner: 'witch-hound', brute: 'flagellant-bomber',
-        shooter: 'inquisitor-gunner', bomber: 'flagellant-bomber', flyer: 'grave-crow',
-        summoner: 'zealot-preacher', elite: 'elite-pyre-warden', swarm: 'grave-crow',
-      },
-      // Assets dedicados de M3–M5 ainda serão substituídos; por enquanto o
-      // gameplay já usa os arquétipos corretos com os melhores reskins atuais.
-      m3: {
-        crawler: 'torch-peasant', runner: 'witch-hound', brute: 'crypt-skeleton',
-        shooter: 'inquisitor-gunner', bomber: 'flagellant-bomber', flyer: 'grave-crow',
-        summoner: 'zealot-preacher', elite: 'elite-profaned-sentinel', swarm: 'grave-crow',
-      },
-      m4: {
-        crawler: 'risen-servant', runner: 'witch-hound', brute: 'elite-profaned-sentinel',
-        shooter: 'inquisitor-gunner', bomber: 'flagellant-bomber', flyer: 'grave-crow',
-        summoner: 'zealot-preacher', elite: 'elite-profaned-sentinel', swarm: 'fx-bat-swarm',
-      },
-      m5: {
-        crawler: 'crawler-walk', runner: 'witch-hound', brute: 'elite-pyre-warden',
-        shooter: 'inquisitor-gunner', bomber: 'flagellant-bomber', flyer: 'grave-crow',
-        summoner: 'zealot-preacher', elite: 'elite-pyre-warden', swarm: 'crawler-walk',
-      },
-    };
-    return map[memoryId]?.[defId] ?? this.getEnemyDef(defId)?.spriteKey ?? 'dev-enemy';
+    const archetype = defId as EnemyArchetype;
+    return enemyVisual(memoryId, archetype) ?? 'dev-enemy';
   }
 
   private syncGems(): void {
@@ -252,6 +237,7 @@ export class RunScene extends Phaser.Scene {
   }
 
   private syncAttacks(): void {
+    this.telegraphs.clear();
     let i = 0;
     this.world.attacks.forEachActive((a) => {
       let s = this.attackSprites[i];
@@ -263,6 +249,21 @@ export class RunScene extends Phaser.Scene {
       if (this.anims.exists(a.spriteKey) && s.anims.getName() !== a.spriteKey) s.play(a.spriteKey, true);
       s.setVisible(true).setPosition(a.pos.x, a.pos.y);
       s.setScale(a.spriteKey === 'dev-aura' ? (a.radius * 2) / AURA_TEX_SIZE : 1);
+      s.setRotation(a.motion === 'linear' ? Math.atan2(a.vel.y, a.vel.x) : 0);
+      const warning = a.ageMs < a.telegraphMs;
+      s.setAlpha(warning ? 0.22 : 1);
+      if (warning && a.telegraphShape === 'circle') {
+        const pulse = 0.45 + 0.35 * Math.sin(a.ageMs * 0.025);
+        this.telegraphs.lineStyle(2, 0xff6b3d, pulse);
+        this.telegraphs.fillStyle(0xb31217, 0.08);
+        const radius = a.telegraphRadius || a.radius;
+        this.telegraphs.fillCircle(a.telegraphTargetX, a.telegraphTargetY, radius);
+        this.telegraphs.strokeCircle(a.telegraphTargetX, a.telegraphTargetY, radius);
+      } else if (warning && a.telegraphShape === 'line') {
+        const pulse = 0.5 + 0.35 * Math.sin(a.ageMs * 0.03);
+        this.telegraphs.lineStyle(Math.max(2, a.radius * 0.65), 0xff6b3d, pulse);
+        this.telegraphs.lineBetween(a.pos.x, a.pos.y, a.telegraphTargetX, a.telegraphTargetY);
+      }
       i++;
     });
     for (let j = i; j < this.attackSprites.length; j++) this.attackSprites[j].setVisible(false);
@@ -282,6 +283,7 @@ export class RunScene extends Phaser.Scene {
     const bossScale = b.defId === 'satan' ? 1.65 : b.defId === 'janissary-commander' ? 1.2 : 1;
     this.bossSprite.setVisible(true).setPosition(b.pos.x, b.pos.y).setScale(bossScale);
     this.bossSprite.setFlipX(this.world.player.pos.x < b.pos.x);
+    this.bossSprite.setAlpha(b.transitionMs > 0 ? 0.6 + Math.sin(b.transitionMs * 0.04) * 0.3 : 1);
   }
 
   private registerManifestAnimations(): void {
@@ -305,9 +307,13 @@ export class RunScene extends Phaser.Scene {
     this.playerSprite.play(key, true);
   }
 
-  private getEnemyDef(id: string): { spriteKey: string } | undefined {
-    // Evita acoplar o renderizador a Phaser: a tabela de gameplay é a fonte do
-    // sprite de cada arquétipo.
-    return ENEMY_DEFS[id as keyof typeof ENEMY_DEFS];
+  private cleanup(): void {
+    for (const unsubscribe of this.eventUnsubscribers) unsubscribe();
+    this.eventUnsubscribers.length = 0;
+    this.world?.events.clear();
+    this.world?.attacks.releaseAll();
+    this.world?.enemies.releaseAll();
+    this.world?.pickups.releaseAll();
+    this.parallax?.destroy();
   }
 }

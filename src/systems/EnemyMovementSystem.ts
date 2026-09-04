@@ -31,6 +31,29 @@ export class EnemyMovementSystem implements System {
         const ty = nx * Math.sin(e.aiPhase) * moveSpeed * 0.55;
         e.pos.x += (nx * moveSpeed + tx) * dt;
         e.pos.y += (ny * moveSpeed + ty) * dt;
+      } else if (def.behavior === 'runner') {
+        // Rajadas curtas seguidas de recuperação: pressão rápida, mas esquivável.
+        const cycle = (world.time.elapsedMs + Math.abs(e.aiPhase * 137)) % 1400;
+        const multiplier = cycle < 650 ? 1.45 : 0.42;
+        e.pos.x += nx * moveSpeed * multiplier * dt;
+        e.pos.y += ny * moveSpeed * multiplier * dt;
+      } else if (def.behavior === 'brute') {
+        // Passo pesado: prepara, avança e volta ao ritmo lento.
+        const cycle = (world.time.elapsedMs + Math.abs(e.aiPhase * 211)) % 2800;
+        const multiplier = cycle < 500 ? 0.12 : cycle < 1050 ? 2.05 : 0.68;
+        e.pos.x += nx * moveSpeed * multiplier * dt;
+        e.pos.y += ny * moveSpeed * multiplier * dt;
+      } else if (def.behavior === 'elite') {
+        // Persegue em arco, forçando reposicionamento em vez de contato frontal puro.
+        const lateral = Math.sin(world.time.elapsedMs * 0.003 + e.aiPhase) * 0.55;
+        e.pos.x += (nx - ny * lateral) * moveSpeed * dt;
+        e.pos.y += (ny + nx * lateral) * moveSpeed * dt;
+      } else if (def.behavior === 'swarm') {
+        // Ondulação curta e veloz; visualmente forma uma massa distinta do voador.
+        e.aiPhase += dt * 9;
+        const lateral = Math.sin(e.aiPhase) * moveSpeed * 0.24;
+        e.pos.x += (nx * moveSpeed - ny * lateral) * dt;
+        e.pos.y += (ny * moveSpeed + nx * lateral) * dt;
       } else {
         e.pos.x += nx * moveSpeed * dt;
         e.pos.y += ny * moveSpeed * dt;
@@ -43,7 +66,7 @@ export class EnemyMovementSystem implements System {
         this.fireAtPlayer(world, e.pos.x, e.pos.y, def.projectileDamage ?? 8, def.projectileSpeed ?? 90);
         e.aiCooldownMs = def.attackCooldownMs ?? 1900;
       } else if (def.behavior === 'bomber' && d <= (def.preferredRange ?? 28)) {
-        this.nova(world, e.pos.x, e.pos.y, def.projectileDamage ?? 14, 30);
+        this.nova(world, e.pos.x, e.pos.y, def.projectileDamage ?? 14, 30, 650);
         e.hp = 0;
         world.enemies.release(e);
       } else if (def.behavior === 'summon') {
@@ -73,14 +96,15 @@ export class EnemyMovementSystem implements System {
     a.ownerPowerId = 'enemy'; a.spriteKey = 'dev-spear';
   }
 
-  private nova(world: World, x: number, y: number, damage: number, radius: number): void {
+  private nova(world: World, x: number, y: number, damage: number, radius: number, telegraphMs: number): void {
     const a = world.attacks.acquire();
     if (!a) return;
-    a.motion = 'linear';
+    a.motion = 'fixed';
     a.pos.x = x; a.pos.y = y;
     a.vel.x = 0; a.vel.y = 0;
     a.damage = damage; a.radius = radius; a.pierceLeft = 0;
-    a.hitCooldownMs = 500; a.lifespanMs = 450;
+    a.hitCooldownMs = 500; a.telegraphMs = telegraphMs; a.lifespanMs = telegraphMs + 450;
+    a.telegraphShape = 'circle'; a.telegraphTargetX = x; a.telegraphTargetY = y;
     a.ownerPowerId = 'enemy'; a.spriteKey = 'dev-aura';
   }
 }

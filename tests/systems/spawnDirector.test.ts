@@ -85,4 +85,20 @@ describe('SpawnDirector', () => {
     const ts = MEMORY_PLACEHOLDER.timeline.map((p) => p.tSec);
     expect([...ts].sort((a, b) => a - b)).toEqual(ts);
   });
+
+  it('aplica escala legível da fase sem alterar a definição base', () => {
+    const world = createWorld(1);
+    const dir = new SpawnDirector([{
+      tSec: 0, budget: 1, pool: ['crawler'], spawnIntervalMs: 10,
+      scaling: { hp: 1.5, damage: 1.25, speed: 1.1 },
+    }]);
+    advanceTime(world, 16);
+    dir.update(world);
+    world.enemies.forEachActive((e) => {
+      expect(e.hp).toBe(ENEMY_DEFS.crawler.hp * 1.5);
+      expect(e.contactDamage).toBe(ENEMY_DEFS.crawler.contactDamage * 1.25);
+      expect(e.speed).toBeCloseTo(ENEMY_DEFS.crawler.speed * 1.1);
+    });
+    expect(ENEMY_DEFS.crawler.hp).toBe(10);
+  });
 });

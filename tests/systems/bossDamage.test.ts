@@ -36,6 +36,21 @@ describe('dano jogador -> chefe', () => {
 });
 
 describe('dano chefe -> jogador', () => {
+  it('telegraph não causa dano antes de ativar', () => {
+    const world = createWorld(1);
+    const a = world.attacks.acquire()!;
+    a.ownerPowerId = 'boss';
+    a.radius = 30;
+    a.damage = 20;
+    a.telegraphMs = 600;
+    a.ageMs = 599;
+    new AttackCollisionSystem().update(world);
+    expect(world.player.hp).toBe(100);
+    a.ageMs = 600;
+    new AttackCollisionSystem().update(world);
+    expect(world.player.hp).toBe(80);
+  });
+
   it('ataque com ownerPowerId "boss" fere o jogador e não os inimigos', () => {
     const world = createWorld(1);
     const damaged = vi.fn();

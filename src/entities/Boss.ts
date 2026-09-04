@@ -17,6 +17,9 @@ export class Boss {
   phaseTimeMs = 0;
   attackCdMs = 0;
   attackIndex = 0;
+  /** Janela invulnerável/legível ao trocar de forma. */
+  transitionMs = 0;
+  orbitDirection = 1;
 
   spawn(def: BossDef, x: number, y: number): void {
     this.defId = def.id;
@@ -31,6 +34,8 @@ export class Boss {
     this.phaseTimeMs = 0;
     this.attackCdMs = 0;
     this.attackIndex = 0;
+    this.transitionMs = 0;
+    this.orbitDirection = x >= 0 ? 1 : -1;
     this.active = true;
   }
 
@@ -47,6 +52,8 @@ export class Boss {
     this.phaseTimeMs = 0;
     this.attackCdMs = 0;
     this.attackIndex = 0;
+    this.transitionMs = 0;
+    this.orbitDirection = 1;
     this.active = false;
   }
 }

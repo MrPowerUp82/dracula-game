@@ -44,4 +44,16 @@ describe('AttackMotionSystem', () => {
     new AttackMotionSystem().update(world, 16);
     expect(a.pos).toEqual({ x: 12, y: -7 });
   });
+
+  it('mantém um ataque parado durante o telegraph e só então o move', () => {
+    const world = createWorld(1);
+    const a = world.attacks.acquire()!;
+    a.vel.x = 100;
+    a.telegraphMs = 500;
+    const system = new AttackMotionSystem();
+    system.update(world, 300);
+    expect(a.pos.x).toBe(0);
+    system.update(world, 250);
+    expect(a.pos.x).toBeCloseTo(5);
+  });
 });

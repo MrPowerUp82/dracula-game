@@ -1,13 +1,14 @@
 import type { System } from './System';
 import type { World } from '../world/World';
 import type { Boss, BossPhase } from '../entities/Boss';
-import { BOSS_DEFS, type BossDef, type BossPhaseDef, type BossAttack } from '../data/bosses';
-import { ENEMY_DEFS } from '../data/enemies';
+import { BOSS_DEFS, type BossDef, type BossPhaseDef } from '../data/bosses';
 import { SPAWN_RING_RADIUS } from '../config/gameConfig';
+import { BossAttackExecutor } from './bosses/BossAttackExecutor';
 
-/** Faz o spawn do chefe no tempo certo e roda a máquina de estados dele. */
+/** Controlador data-driven: spawn, fases, movimento e agenda dos padrões. */
 export class BossSystem implements System {
   private spawned = false;
+  private readonly attacks = new BossAttackExecutor();
 
   constructor(
     private readonly bossId: string,
@@ -15,137 +16,106 @@ export class BossSystem implements System {
   ) {}
 
   update(world: World, deltaMs: number): void {
-    if (!this.spawned && world.time.elapsedMs >= this.bossTimeSec * 1000) {
-      this.spawned = true;
-      const def = BOSS_DEFS[this.bossId];
-      const ang = world.rng.next() * Math.PI * 2;
-      world.boss.spawn(
-        def,
-        world.player.pos.x + Math.cos(ang) * SPAWN_RING_RADIUS,
-        world.player.pos.y + Math.sin(ang) * SPAWN_RING_RADIUS,
-      );
-      world.events.emit('boss:spawned', { defId: this.bossId });
-    }
+    if (!this.spawned && world.time.elapsedMs >= this.bossTimeSec * 1000) this.spawn(world);
 
-    const b = world.boss;
-    if (!b.active) return;
-    const def = BOSS_DEFS[b.defId];
-    b.phaseTimeMs += deltaMs;
+    const boss = world.boss;
+    if (!boss.active) return;
+    const def = BOSS_DEFS[boss.defId];
+    boss.phaseTimeMs += deltaMs;
 
-    if (b.phase === 'intro') {
-      if (b.phaseTimeMs >= def.introMs) this.enterPhase(world, b, 'p1', def.phases[0]);
+    if (boss.phase === 'intro') {
+      if (boss.phaseTimeMs >= def.introMs) this.enterPhase(world, boss, 'p1', def.phases[0], false);
       return;
     }
-    if (b.phase === 'dead') return;
+    if (boss.phase === 'dead') return;
 
-    const frac = b.hp / b.maxHp;
-    if (b.phase === 'p1' && frac <= def.p2At) {
-      this.enterPhase(world, b, 'p2', def.phases[1]);
-    } else if ((b.phase === 'p1' || b.phase === 'p2') && frac <= def.enrageAt) {
-      this.enterPhase(world, b, 'enraged', def.phases[2]);
+    const hpRatio = boss.hp / boss.maxHp;
+    if (boss.phase === 'p1' && hpRatio <= def.p2At) {
+      this.enterPhase(world, boss, 'p2', def.phases[1], true);
+    } else if ((boss.phase === 'p1' || boss.phase === 'p2') && hpRatio <= def.enrageAt) {
+      this.enterPhase(world, boss, 'enraged', def.phases[2], true);
     }
 
-    this.moveToward(b, world, deltaMs);
-
-    b.attackCdMs -= deltaMs;
-    if (b.attackCdMs <= 0) {
-      const pd = this.phaseDef(b, def);
-      const atk = pd.attacks[b.attackIndex % pd.attacks.length];
-      this.execute(world, atk);
-      b.attackIndex++;
-      b.attackCdMs = atk.cooldownMs;
+    if (boss.transitionMs > 0) {
+      boss.transitionMs = Math.max(0, boss.transitionMs - deltaMs);
+      return;
     }
+
+    const phase = this.phaseDef(boss, def);
+    this.move(boss, world, phase, deltaMs);
+    boss.attackCdMs -= deltaMs;
+    if (boss.attackCdMs > 0) return;
+
+    const attack = phase.attacks[boss.attackIndex % phase.attacks.length];
+    this.attacks.execute(world, attack);
+    boss.attackIndex++;
+    boss.attackCdMs = attack.cooldownMs;
   }
 
-  private enterPhase(world: World, b: Boss, phase: BossPhase, pd: BossPhaseDef): void {
-    b.phase = phase;
-    b.phaseTimeMs = 0;
-    b.attackIndex = 0;
-    b.moveSpeed = pd.moveSpeed;
-    b.attackCdMs = pd.attacks[0]?.cooldownMs ?? 2000;
-    world.events.emit('boss:phase', { phase });
+  private spawn(world: World): void {
+    this.spawned = true;
+    const def = BOSS_DEFS[this.bossId];
+    if (!def) return;
+    const angle = world.rng.next() * Math.PI * 2;
+    world.enemies.releaseAll();
+    world.attacks.forEachActive((attack) => {
+      if (attack.ownerPowerId === 'enemy') world.attacks.release(attack);
+    });
+    world.boss.spawn(
+      def,
+      world.player.pos.x + Math.cos(angle) * SPAWN_RING_RADIUS,
+      world.player.pos.y + Math.sin(angle) * SPAWN_RING_RADIUS,
+    );
+    world.events.emit('boss:spawned', { defId: this.bossId });
   }
 
-  private moveToward(b: Boss, world: World, deltaMs: number): void {
-    const dx = world.player.pos.x - b.pos.x;
-    const dy = world.player.pos.y - b.pos.y;
-    const d = Math.hypot(dx, dy) || 1;
-    const stop = b.radius + world.player.radius + 4;
-    if (d <= stop) return;
-    const step = (b.moveSpeed * deltaMs) / 1000;
-    b.pos.x += (dx / d) * step;
-    b.pos.y += (dy / d) * step;
+  private enterPhase(
+    world: World,
+    boss: Boss,
+    phaseId: BossPhase,
+    phase: BossPhaseDef,
+    transition: boolean,
+  ): void {
+    boss.phase = phaseId;
+    boss.phaseTimeMs = 0;
+    boss.attackIndex = 0;
+    boss.moveSpeed = phase.moveSpeed;
+    boss.attackCdMs = Math.min(900, phase.attacks[0]?.cooldownMs ?? 900);
+    boss.transitionMs = transition ? phase.transitionMs : 0;
+    boss.orbitDirection *= -1;
+    // Evita padrões da forma anterior atravessando a transição.
+    world.attacks.forEachActive((attack) => {
+      if (attack.ownerPowerId === 'boss') world.attacks.release(attack);
+    });
+    world.events.emit('boss:phase', { phase: phaseId });
   }
 
-  private phaseDef(b: Boss, def: BossDef): BossPhaseDef {
-    if (b.phase === 'p2') return def.phases[1];
-    if (b.phase === 'enraged') return def.phases[2];
+  private phaseDef(boss: Boss, def: BossDef): BossPhaseDef {
+    if (boss.phase === 'p2') return def.phases[1];
+    if (boss.phase === 'enraged') return def.phases[2];
     return def.phases[0];
   }
 
-  private execute(world: World, atk: BossAttack): void {
-    const b = world.boss;
-    if (atk.kind === 'ring') {
-      const n = atk.count ?? 12;
-      for (let i = 0; i < n; i++) {
-        const a = world.attacks.acquire();
-        if (!a) break;
-        const ang = (i / n) * Math.PI * 2;
-        a.motion = 'linear';
-        a.pos.x = b.pos.x;
-        a.pos.y = b.pos.y;
-        a.vel.x = Math.cos(ang) * (atk.speed ?? 90);
-        a.vel.y = Math.sin(ang) * (atk.speed ?? 90);
-        a.damage = atk.damage;
-        a.radius = atk.radius ?? 5;
-        a.pierceLeft = 0;
-        a.hitCooldownMs = 0;
-        a.lifespanMs = 4000;
-        a.ownerPowerId = 'boss';
-        a.spriteKey = 'dev-spear';
-      }
-    } else if (atk.kind === 'charge') {
-      const a = world.attacks.acquire();
-      if (!a) return;
-      const dx = world.player.pos.x - b.pos.x;
-      const dy = world.player.pos.y - b.pos.y;
-      const d = Math.hypot(dx, dy) || 1;
-      a.motion = 'linear';
-      a.pos.x = b.pos.x;
-      a.pos.y = b.pos.y;
-      a.vel.x = (dx / d) * (atk.speed ?? 260);
-      a.vel.y = (dy / d) * (atk.speed ?? 260);
-      a.damage = atk.damage;
-      a.radius = atk.radius ?? 8;
-      a.pierceLeft = 3;
-      a.hitCooldownMs = 0;
-      a.lifespanMs = 1800;
-      a.ownerPowerId = 'boss';
-      a.spriteKey = 'dev-spear';
-    } else if (atk.kind === 'nova') {
-      const a = world.attacks.acquire();
-      if (!a) return;
-      a.motion = 'linear';
-      a.pos.x = b.pos.x;
-      a.pos.y = b.pos.y;
-      a.vel.x = 0;
-      a.vel.y = 0;
-      a.damage = atk.damage;
-      a.radius = atk.radius ?? 46;
-      a.hitCooldownMs = 400;
-      a.lifespanMs = 600;
-      a.ownerPowerId = 'boss';
-      a.spriteKey = 'dev-aura';
-    } else if (atk.kind === 'summon') {
-      const n = atk.count ?? 4;
-      const def = ENEMY_DEFS[atk.archetype ?? 'runner'];
-      for (let i = 0; i < n; i++) {
-        const e = world.enemies.acquire();
-        if (!e) break;
-        const ox = (world.rng.next() - 0.5) * 40;
-        const oy = (world.rng.next() - 0.5) * 40;
-        e.spawn(def, b.pos.x + ox, b.pos.y + oy);
-      }
+  private move(boss: Boss, world: World, phase: BossPhaseDef, deltaMs: number): void {
+    if (phase.movement === 'stationary') return;
+    const dx = world.player.pos.x - boss.pos.x;
+    const dy = world.player.pos.y - boss.pos.y;
+    const distance = Math.hypot(dx, dy) || 1;
+    const nx = dx / distance;
+    const ny = dy / distance;
+    const step = (boss.moveSpeed * deltaMs) / 1000;
+
+    if (phase.movement === 'orbit') {
+      const range = phase.preferredRange ?? 110;
+      const radial = distance < range * 0.84 ? -0.7 : distance > range * 1.16 ? 0.7 : 0;
+      boss.pos.x += (nx * radial + -ny * boss.orbitDirection) * step;
+      boss.pos.y += (ny * radial + nx * boss.orbitDirection) * step;
+      return;
     }
+
+    const stop = Math.max(boss.radius + world.player.radius + 4, phase.preferredRange ?? 0);
+    if (distance <= stop) return;
+    boss.pos.x += nx * step;
+    boss.pos.y += ny * step;
   }
 }

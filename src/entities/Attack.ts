@@ -2,7 +2,8 @@ import type { Poolable } from '../core/Pool';
 import type { Vec2 } from './Player';
 import type { Enemy } from './Enemy';
 
-export type AttackMotion = 'linear' | 'orbit' | 'static';
+export type AttackMotion = 'linear' | 'orbit' | 'static' | 'fixed';
+export type TelegraphShape = 'none' | 'circle' | 'line';
 
 /**
  * "Coisa que causa dano" reciclável: projétil (linear, some ao acabar o
@@ -20,6 +21,12 @@ export class Attack implements Poolable {
   hitCooldownMs = 0;
   lifespanMs = Infinity;
   ageMs = 0;
+  /** Enquanto ageMs < telegraphMs, o ataque é visível mas não move nem causa dano. */
+  telegraphMs = 0;
+  telegraphShape: TelegraphShape = 'none';
+  telegraphTargetX = 0;
+  telegraphTargetY = 0;
+  telegraphRadius = 0;
   motion: AttackMotion = 'linear';
   orbitAngle = 0;
   orbitRadius = 0;
@@ -42,6 +49,11 @@ export class Attack implements Poolable {
     this.hitCooldownMs = 0;
     this.lifespanMs = Infinity;
     this.ageMs = 0;
+    this.telegraphMs = 0;
+    this.telegraphShape = 'none';
+    this.telegraphTargetX = 0;
+    this.telegraphTargetY = 0;
+    this.telegraphRadius = 0;
     this.motion = 'linear';
     this.orbitAngle = 0;
     this.orbitRadius = 0;

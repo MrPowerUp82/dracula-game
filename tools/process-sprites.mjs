@@ -69,6 +69,13 @@ const JOBS = [
   { src: 'fx_claw_scratch.jpg', name: 'fx-claw-scratch', cols: 7, rows: 3, take: 9, targetH: 48 }
 ];
 
+// Camadas de cenário não são spritesheets, mas passam pelo mesmo chroma-key
+// para que o xadrez do gerador não apareça no jogo.
+const LAYER_JOBS = [
+  { src: 'env_m1_courtyard_mid.jpg', name: 'env_m1_courtyard_mid' },
+  { src: 'env_m1_courtyard_near.jpg', name: 'env_m1_courtyard_near' },
+];
+
 const SAT_MAX = 0.22; // acima disso, o pixel tem cor -> é personagem
 const LUMA_PAD = 20; // folga na faixa de luminância do xadrez
 
@@ -332,6 +339,18 @@ async function run() {
     await sheet.composite(composites).png().toFile(resolve(OUT, `${job.name}.png`));
     manifest[job.name] = { frameWidth: frameW, frameHeight: frameH, frameCount };
     console.log(`${job.name}: ${frameCount} frames @ ${frameW}x${frameH}`);
+  }
+
+  for (const job of LAYER_JOBS) {
+    const input = readFileSync(resolve(SRC, job.src));
+    const image = sharp(input).ensureAlpha();
+    const meta = await image.metadata();
+    const raw = new Uint8Array(await image.raw().toBuffer());
+    keyOutChecker(raw, meta.width, meta.height);
+    await sharp(raw, { raw: { width: meta.width, height: meta.height, channels: 4 } })
+      .png()
+      .toFile(resolve(OUT, `${job.name}.png`));
+    console.log(`${job.name}: camada RGBA ${meta.width}x${meta.height}`);
   }
 
   writeFileSync(resolve(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));

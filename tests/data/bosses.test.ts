@@ -14,8 +14,23 @@ describe('BOSS_DEFS', () => {
     }
   });
 
-  it('só o chefe de M1 usa arte real', () => {
+  it('usa apenas sprites existentes como arte ou fallback', () => {
     expect(BOSS_DEFS['profaner-knight'].spriteKey).toBe('boss-m1');
-    expect(BOSS_DEFS['satan'].spriteKey).toBe('dev-boss');
+    expect(BOSS_DEFS['grand-inquisitor'].spriteKey).toBe('boss-m2');
+    expect(BOSS_DEFS['satan'].spriteKey).toBe('boss-m1');
+  });
+
+  it('Satã tem três formas com movimento e repertórios distintos', () => {
+    const phases = BOSS_DEFS.satan.phases;
+    expect(phases.map((p) => p.name)).toEqual(['Anjo Caído', 'Titã de Fogo', 'Forma Verdadeira']);
+    expect(new Set(phases.map((p) => p.movement)).size).toBe(3);
+    expect(phases[0].attacks.some((a) => a.kind === 'volley')).toBe(true);
+    expect(phases[1].attacks.some((a) => a.kind === 'charge')).toBe(true);
+    expect(phases[2].attacks.some((a) => a.kind === 'meteor')).toBe(true);
+    for (const phase of phases) {
+      for (const attack of phase.attacks.filter((a) => a.damage > 0)) {
+        expect(attack.telegraphMs).toBeGreaterThan(0);
+      }
+    }
   });
 });

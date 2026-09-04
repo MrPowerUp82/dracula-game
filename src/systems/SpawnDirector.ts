@@ -20,12 +20,14 @@ export class SpawnDirector implements System {
   update(world: World): void {
     if (world.boss.active) return; // sem inimigos comuns durante o confronto
     const elapsed = world.time.elapsedMs;
-    if (elapsed - this.lastSpawnAtMs < SPAWN_INTERVAL_MS) return;
-
     const phase = this.currentPhase(elapsed);
+    if (elapsed - this.lastSpawnAtMs < (phase.spawnIntervalMs ?? SPAWN_INTERVAL_MS)) return;
     if (this.liveBudget(world) >= phase.budget) return;
 
-    const def = ENEMY_DEFS[world.rng.pick(phase.pool)];
+    const archetype = phase.eliteChance && world.rng.chance(phase.eliteChance)
+      ? 'elite'
+      : world.rng.pick(phase.pool);
+    const def = ENEMY_DEFS[archetype];
     const enemy = world.enemies.acquire();
     if (!enemy) return; // pool cheio — teto rígido
 
@@ -33,6 +35,11 @@ export class SpawnDirector implements System {
     const x = world.player.pos.x + Math.cos(angle) * SPAWN_RING_RADIUS;
     const y = world.player.pos.y + Math.sin(angle) * SPAWN_RING_RADIUS;
     enemy.spawn(def, x, y);
+    if (phase.scaling) {
+      enemy.hp *= phase.scaling.hp;
+      enemy.contactDamage *= phase.scaling.damage;
+      enemy.speed *= phase.scaling.speed;
+    }
     this.lastSpawnAtMs = elapsed;
   }
 

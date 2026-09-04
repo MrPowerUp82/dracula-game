@@ -64,4 +64,23 @@ describe('BossSystem — estados', () => {
     expect(world.boss.phase).toBe('enraged');
     expect(phaseEv).toHaveBeenCalled();
   });
+
+  it('Satã percorre as três formas com janelas de transformação', () => {
+    const world = createWorld(9);
+    const sys = new BossSystem('satan', 0);
+    run(world, sys, BOSS_DEFS.satan.introMs + 64);
+    expect(world.boss.phase).toBe('p1');
+    expect(BOSS_DEFS.satan.phases[0].name).toBe('Anjo Caído');
+
+    world.boss.hp = world.boss.maxHp * 0.6;
+    run(world, sys, 16);
+    expect(world.boss.phase).toBe('p2');
+    expect(world.boss.transitionMs).toBeGreaterThan(0);
+
+    run(world, sys, BOSS_DEFS.satan.phases[1].transitionMs + 32);
+    world.boss.hp = world.boss.maxHp * 0.2;
+    run(world, sys, 16);
+    expect(world.boss.phase).toBe('enraged');
+    expect(BOSS_DEFS.satan.phases[2].name).toBe('Forma Verdadeira');
+  });
 });

@@ -7,6 +7,15 @@ interface SheetMeta {
 }
 type SpriteManifest = Record<string, SheetMeta>;
 
+// Artes estáticas ainda vivem na pasta-fonte `sprites/`. URLs importadas fazem
+// o Vite incluí-las no build; os spritesheets processados continuam no manifest.
+const RAW_ART = {
+  title: new URL('../../sprites/art_title_key_art.jpg', import.meta.url).href,
+  memory1: new URL('../../sprites/art_memory1_the_awakening.jpg', import.meta.url).href,
+  hub: new URL('../../sprites/env_hub_ruined_castle.jpg', import.meta.url).href,
+  m1Far: new URL('../../sprites/env_m1_courtyard_far.jpg', import.meta.url).href,
+};
+
 /**
  * Carrega todos os spritesheets processados em public/sprites/.
  * O manifest é a fonte única das dimensões dos frames, evitando hard-code de
@@ -19,10 +28,10 @@ export class PreloadScene extends Phaser.Scene {
 
   preload(): void {
     this.load.json('sprite-manifest', 'sprites/manifest.json');
-    this.load.image('art-title', 'sprites/art_title_key_art.jpg');
-    this.load.image('art-memory1', 'sprites/art_memory1_the_awakening.jpg');
-    this.load.image('env-hub', 'sprites/env_hub_ruined_castle.jpg');
-    this.load.image('env-m1-far', 'sprites/env_m1_courtyard_far.jpg');
+    this.load.image('art-title', RAW_ART.title);
+    this.load.image('art-memory1', RAW_ART.memory1);
+    this.load.image('env-hub', RAW_ART.hub);
+    this.load.image('env-m1-far', RAW_ART.m1Far);
     this.load.image('env-m1-mid', 'sprites/env_m1_courtyard_mid.png');
     this.load.image('env-m1-near', 'sprites/env_m1_courtyard_near.png');
     this.load.image('env-m2-far', 'sprites/env_m2_village_far.png');

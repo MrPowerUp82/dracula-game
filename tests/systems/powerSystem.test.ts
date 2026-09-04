@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createWorld, advanceTime } from '../../src/world/World';
 import { PowerSystem } from '../../src/systems/PowerSystem';
 import { ENEMY_DEFS } from '../../src/data/enemies';
+import { BOSS_DEFS } from '../../src/data/bosses';
 
 describe('PowerSystem', () => {
   it('bat-swarm materializa orbes conforme o amount do nível', () => {
@@ -68,5 +69,18 @@ describe('PowerSystem', () => {
     advanceTime(world, 100);
     sys.update(world, 100);
     expect(world.attacks.activeCount).toBe(after1); // ainda em cooldown
+  });
+
+  it('poder de projétil mira o chefe quando a arena não tem inimigos', () => {
+    const world = createWorld(1);
+    world.powers.equip('blood-spear');
+    world.boss.spawn(BOSS_DEFS.satan, 80, 0);
+    world.boss.phase = 'p1';
+    new PowerSystem().update(world, 16);
+    let aimedAtBoss = false;
+    world.attacks.forEachActive((a) => {
+      if (a.ownerPowerId === 'blood-spear' && a.vel.x > 0) aimedAtBoss = true;
+    });
+    expect(aimedAtBoss).toBe(true);
   });
 });

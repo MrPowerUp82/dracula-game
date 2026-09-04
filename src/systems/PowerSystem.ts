@@ -4,6 +4,7 @@ import type { OwnedPower } from '../powers/PowerRoster';
 import { POWER_DEFS, powerLevel, BAT_ORBIT_SPEED, BAT_HIT_COOLDOWN_MS } from '../data/powers';
 import { damageMult, areaMult, cooldownMult, amountBonus, projSpeedMult } from '../stats/derive';
 import type { Enemy } from '../entities/Enemy';
+import type { Boss } from '../entities/Boss';
 
 /** Lê o PowerRoster e materializa/atualiza os Attacks correspondentes. */
 export class PowerSystem implements System {
@@ -78,7 +79,7 @@ export class PowerSystem implements System {
   private fire(world: World, owned: OwnedPower): void {
     const stats = world.player.stats;
     const lv = powerLevel(owned.def, owned.level);
-    const target = this.nearestEnemy(world);
+    const target = this.nearestTarget(world);
     if (!target) return;
 
     const baseAngle = Math.atan2(
@@ -108,12 +109,22 @@ export class PowerSystem implements System {
     }
   }
 
-  private nearestEnemy(world: World): Enemy | null {
+  private nearestTarget(world: World): Enemy | Boss | null {
     const px = world.player.pos.x;
     const py = world.player.pos.y;
-    const found: { e: Enemy; d: number }[] = [];
-    world.enemies.forEachActive((e) => found.push({ e, d: (e.pos.x - px) ** 2 + (e.pos.y - py) ** 2 }));
-    if (found.length === 0) return null;
-    return found.reduce((a, b) => (b.d < a.d ? b : a)).e;
+    let nearest: Enemy | Boss | null = world.boss.active && world.boss.phase !== 'intro'
+      ? world.boss
+      : null;
+    let nearestDistance = nearest
+      ? (nearest.pos.x - px) ** 2 + (nearest.pos.y - py) ** 2
+      : Infinity;
+    world.enemies.forEachActive((enemy) => {
+      const distance = (enemy.pos.x - px) ** 2 + (enemy.pos.y - py) ** 2;
+      if (distance < nearestDistance) {
+        nearest = enemy;
+        nearestDistance = distance;
+      }
+    });
+    return nearest;
   }
 }
