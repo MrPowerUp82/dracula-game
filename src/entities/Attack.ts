@@ -28,6 +28,8 @@ export class Attack implements Poolable {
   spriteKey = 'dev-bat';
   /** Inimigo -> ms do último acerto (para hitbox persistente). */
   readonly hits = new Map<Enemy, number>();
+  /** ms do último acerto no chefe (hitbox persistente). */
+  bossHitAtMs = -Infinity;
 
   reset(): void {
     this.pos.x = 0;
@@ -47,5 +49,6 @@ export class Attack implements Poolable {
     this.ownerPowerId = '';
     this.spriteKey = 'dev-bat';
     this.hits.clear();
+    this.bossHitAtMs = -Infinity;
   }
 }

@@ -30,7 +30,9 @@ export class PowerSystem implements System {
 
   private resync(world: World): void {
     world.attacks.forEachActive((a) => {
-      if (a.ownerPowerId !== '') world.attacks.release(a);
+      if (a.ownerPowerId !== '' && POWER_DEFS[a.ownerPowerId] !== undefined) {
+        world.attacks.release(a);
+      }
     });
     for (const id of Object.keys(POWER_DEFS)) {
       if (POWER_DEFS[id].behavior === 'passive') world.player.stats.removeSource(id);

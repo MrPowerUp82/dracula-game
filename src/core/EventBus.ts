@@ -5,6 +5,9 @@ export interface EventMap {
   'player:damaged': { amount: number; hpRemaining: number };
   'player:died': Record<string, never>;
   'stats:dirty': Record<string, never>;
+  'boss:spawned': { defId: string };
+  'boss:phase': { phase: string };
+  'boss:died': Record<string, never>;
 }
 
 export type EventKey = keyof EventMap;
