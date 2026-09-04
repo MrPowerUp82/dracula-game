@@ -26,7 +26,7 @@ export class PreloadScene extends Phaser.Scene {
   create(): void {
     const manifest = this.cache.json.get('sprite-manifest') as SpriteManifest | undefined;
     if (!manifest) {
-      this.scene.start('Run');
+      this.scene.start('Hub');
       return;
     }
 
@@ -36,7 +36,7 @@ export class PreloadScene extends Phaser.Scene {
         frameHeight: meta.frameHeight,
       });
     }
-    this.load.once(Phaser.Loader.Events.COMPLETE, () => this.scene.start('Run'));
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => this.scene.start('Hub'));
     this.load.start();
   }
 
