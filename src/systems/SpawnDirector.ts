@@ -18,6 +18,7 @@ export class SpawnDirector implements System {
   constructor(private readonly timeline: SpawnPhase[]) {}
 
   update(world: World): void {
+    if (world.boss.active) return; // sem inimigos comuns durante o confronto
     const elapsed = world.time.elapsedMs;
     if (elapsed - this.lastSpawnAtMs < SPAWN_INTERVAL_MS) return;
 

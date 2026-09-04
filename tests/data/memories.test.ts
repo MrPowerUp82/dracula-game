@@ -14,6 +14,13 @@ describe('MEMORIES', () => {
     expect(MEMORY_PLACEHOLDER).toBe(MEMORIES[0]);
   });
 
+  it('toda memória tem um chefe e um tempo de chefe', () => {
+    for (const m of MEMORIES) {
+      expect(m.bossId).toBeTruthy();
+      expect(m.bossTimeSec).toBeGreaterThan(0);
+    }
+  });
+
   it('memoryUnlocked: a 1ª é livre; a 2ª exige a 1ª concluída', () => {
     const save = defaultSave();
     expect(memoryUnlocked(save, 0)).toBe(true);

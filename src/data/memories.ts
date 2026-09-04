@@ -11,6 +11,10 @@ export interface MemoryDef {
   id: string;
   name: string;
   durationSec: number;
+  /** Chefe da memória (chave em BOSS_DEFS). */
+  bossId: string;
+  /** Segundos até o chefe surgir. */
+  bossTimeSec: number;
   /** Poder permanente concedido ao concluir a memória. */
   rewardPowerId?: string;
   timeline: SpawnPhase[];
@@ -21,6 +25,8 @@ export const MEMORIES: MemoryDef[] = [
     id: 'm1',
     name: 'O Despertar',
     durationSec: 300,
+    bossId: 'profaner-knight',
+    bossTimeSec: 60,
     rewardPowerId: 'mist-form',
     timeline: [
       { tSec: 0, budget: 4, pool: ['crawler'] },
@@ -33,6 +39,8 @@ export const MEMORIES: MemoryDef[] = [
     id: 'm2',
     name: 'A Fogueira',
     durationSec: 360,
+    bossId: 'grand-inquisitor',
+    bossTimeSec: 70,
     rewardPowerId: 'blood-rain',
     timeline: [
       { tSec: 0, budget: 6, pool: ['crawler', 'runner'] },
@@ -45,6 +53,8 @@ export const MEMORIES: MemoryDef[] = [
     id: 'm3',
     name: 'O Cerco',
     durationSec: 420,
+    bossId: 'janissary-commander',
+    bossTimeSec: 80,
     timeline: [
       { tSec: 0, budget: 8, pool: ['runner', 'crawler'] },
       { tSec: 60, budget: 18, pool: ['runner', 'crawler', 'brute'] },
