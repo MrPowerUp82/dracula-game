@@ -18,6 +18,7 @@ import { BossSystem } from '../systems/BossSystem';
 import { BOSS_DEFS } from '../data/bosses';
 import { PhaserInputSource } from '../input/PhaserInputSource';
 import { MEMORIES, type MemoryDef } from '../data/memories';
+import { ENEMY_DEFS } from '../data/enemies';
 import { AURA_TEX_SIZE } from '../config/gameConfig';
 import { applyMetaToWorld } from '../save/applyToRun';
 import { runOutcome } from '../run/runEnd';
@@ -32,7 +33,9 @@ export class RunScene extends Phaser.Scene {
   private playerSprite!: Phaser.GameObjects.Sprite;
   private enemySprites: Phaser.GameObjects.Sprite[] = [];
   private gemSprites: Phaser.GameObjects.Image[] = [];
-  private attackSprites: Phaser.GameObjects.Image[] = [];
+  private attackSprites: Phaser.GameObjects.Sprite[] = [];
+  private playerAnimOverride = '';
+  private playerAnimOverrideUntil = 0;
   private bossSprite?: Phaser.GameObjects.Sprite;
   private debugText!: Phaser.GameObjects.Text;
   private pendingLevelUps = 0;
@@ -78,10 +81,7 @@ export class RunScene extends Phaser.Scene {
 
     this.add.grid(0, 0, 4000, 4000, 32, 32, 0x140d1c, 1, 0x241a30, 1).setDepth(-10);
 
-    this.registerAnim('dracula-idle', 5, -1);
-    this.registerAnim('dracula-walk', 9, -1);
-    this.registerAnim('crawler-walk', 7, -1);
-    this.registerAnim('boss-m1', 7, -1);
+    this.registerManifestAnimations();
 
     const hasDracula = this.textures.exists('dracula-idle');
     this.playerSprite = this.add.sprite(0, 0, hasDracula ? 'dracula-idle' : 'dev-player').setDepth(5);
@@ -94,6 +94,12 @@ export class RunScene extends Phaser.Scene {
 
     this.world.events.on('enemy:died', () => {
       this.kills++;
+    });
+    this.world.events.on('player:damaged', () => {
+      this.playPlayerState('dracula-hurt', 220);
+    });
+    this.world.events.on('player:levelup', () => {
+      this.playPlayerState('dracula-levelup', 520);
     });
     this.world.events.on('player:levelup', () => {
       this.pendingLevelUps++;
@@ -158,13 +164,19 @@ export class RunScene extends Phaser.Scene {
     this.playerSprite.setPosition(p.pos.x, p.pos.y);
     if (Math.abs(p.vel.x) > 1) this.playerSprite.setFlipX(p.vel.x < 0);
     if (!this.textures.exists('dracula-idle')) return;
+    if (this.playerAnimOverride && this.world.time.elapsedMs < this.playerAnimOverrideUntil) {
+      if (this.playerSprite.anims.getName() !== this.playerAnimOverride) {
+        this.playerSprite.play(this.playerAnimOverride, true);
+      }
+      return;
+    }
+    this.playerAnimOverride = '';
     const want = Math.hypot(p.vel.x, p.vel.y) > 1 ? 'dracula-walk' : 'dracula-idle';
     if (this.playerSprite.anims.getName() !== want) this.playerSprite.play(want, true);
   }
 
   private syncEnemies(): void {
     const px = this.world.player.pos.x;
-    const hasCrawler = this.textures.exists('crawler-walk');
     let i = 0;
     this.world.enemies.forEachActive((e) => {
       let s = this.enemySprites[i];
@@ -172,13 +184,12 @@ export class RunScene extends Phaser.Scene {
         s = this.add.sprite(0, 0, 'dev-enemy').setDepth(3);
         this.enemySprites[i] = s;
       }
-      const useArt = e.defId === 'crawler' && hasCrawler;
-      const tex = useArt ? 'crawler-walk' : 'dev-enemy';
-      if (s.texture.key !== tex) {
-        s.setTexture(tex);
-        if (useArt) s.play('crawler-walk', true);
-        else s.anims.stop();
-      }
+      const def = this.getEnemyDef(e.defId);
+      const useArt = !!def?.spriteKey && this.textures.exists(def.spriteKey);
+      const tex = useArt ? def.spriteKey : 'dev-enemy';
+      if (s.texture.key !== tex) s.setTexture(tex);
+      if (useArt && this.anims.exists(tex) && s.anims.getName() !== tex) s.play(tex, true);
+      if (!useArt) s.anims.stop();
       s.setVisible(true).setPosition(e.pos.x, e.pos.y);
       s.setFlipX(px < e.pos.x);
       i++;
@@ -205,10 +216,11 @@ export class RunScene extends Phaser.Scene {
     this.world.attacks.forEachActive((a) => {
       let s = this.attackSprites[i];
       if (!s) {
-        s = this.add.image(0, 0, a.spriteKey).setDepth(4);
+        s = this.add.sprite(0, 0, a.spriteKey).setDepth(4);
         this.attackSprites[i] = s;
       }
       if (s.texture.key !== a.spriteKey) s.setTexture(a.spriteKey);
+      if (this.anims.exists(a.spriteKey) && s.anims.getName() !== a.spriteKey) s.play(a.spriteKey, true);
       s.setVisible(true).setPosition(a.pos.x, a.pos.y);
       s.setScale(a.spriteKey === 'dev-aura' ? (a.radius * 2) / AURA_TEX_SIZE : 1);
       i++;
@@ -224,24 +236,37 @@ export class RunScene extends Phaser.Scene {
     }
     const def = BOSS_DEFS[b.defId];
     const key = this.textures.exists(def.spriteKey) ? def.spriteKey : 'dev-boss';
-    if (!this.bossSprite) {
-      this.bossSprite = this.add.sprite(0, 0, key).setDepth(6);
-    }
-    if (this.bossSprite.texture.key !== key) {
-      this.bossSprite.setTexture(key);
-      if (this.anims.exists(key)) this.bossSprite.play(key, true);
-    }
+    if (!this.bossSprite) this.bossSprite = this.add.sprite(0, 0, key).setDepth(6);
+    if (this.bossSprite.texture.key !== key) this.bossSprite.setTexture(key);
+    if (this.anims.exists(key) && this.bossSprite.anims.getName() !== key) this.bossSprite.play(key, true);
     this.bossSprite.setVisible(true).setPosition(b.pos.x, b.pos.y);
     this.bossSprite.setFlipX(this.world.player.pos.x < b.pos.x);
   }
 
-  private registerAnim(key: string, frameRate: number, repeat: number): void {
-    if (this.anims.exists(key) || !this.textures.exists(key)) return;
-    this.anims.create({
-      key,
-      frames: this.anims.generateFrameNumbers(key, { start: 0, end: -1 }),
-      frameRate,
-      repeat,
-    });
+  private registerManifestAnimations(): void {
+    const manifest = this.cache.json.get('sprite-manifest') as Record<string, { frameCount: number }> | undefined;
+    if (!manifest) return;
+    for (const [key, meta] of Object.entries(manifest)) {
+      if (meta.frameCount <= 1 || !this.textures.exists(key) || this.anims.exists(key)) continue;
+      this.anims.create({
+        key,
+        frames: this.anims.generateFrameNumbers(key, { start: 0, end: meta.frameCount - 1 }),
+        frameRate: key.startsWith('fx-') ? 18 : key.startsWith('boss-') ? 8 : 10,
+        repeat: -1,
+      });
+    }
+  }
+
+  private playPlayerState(key: string, durationMs: number): void {
+    if (!this.textures.exists(key) || !this.anims.exists(key)) return;
+    this.playerAnimOverride = key;
+    this.playerAnimOverrideUntil = this.world.time.elapsedMs + durationMs;
+    this.playerSprite.play(key, true);
+  }
+
+  private getEnemyDef(id: string): { spriteKey: string } | undefined {
+    // Evita acoplar o renderizador a Phaser: a tabela de gameplay é a fonte do
+    // sprite de cada arquétipo.
+    return ENEMY_DEFS[id as keyof typeof ENEMY_DEFS];
   }
 }

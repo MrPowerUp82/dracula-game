@@ -8,10 +8,9 @@ interface SheetMeta {
 type SpriteManifest = Record<string, SheetMeta>;
 
 /**
- * Carrega os spritesheets processados (public/sprites/, gerados por
- * `node tools/process-sprites.mjs`). Duas fases: primeiro o manifest com as
- * dimensões de frame, depois os próprios sheets. Texturas `dev-*` ficam como
- * fallback caso algum sheet falte.
+ * Carrega todos os spritesheets processados em public/sprites/.
+ * O manifest é a fonte única das dimensões dos frames, evitando hard-code de
+ * largura/altura dentro das cenas. As texturas dev-* continuam como fallback.
  */
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -36,11 +35,12 @@ export class PreloadScene extends Phaser.Scene {
         frameHeight: meta.frameHeight,
       });
     }
+
     this.load.once(Phaser.Loader.Events.COMPLETE, () => this.scene.start('Hub'));
     this.load.start();
   }
 
-  /** Placeholders gerados em runtime — usados enquanto não há arte real. */
+  /** Placeholders gerados em runtime — usados somente quando uma arte falta. */
   private makeDevTextures(): void {
     const player = this.add.graphics();
     player.fillStyle(0x1a1420, 1);

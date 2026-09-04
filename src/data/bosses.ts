@@ -93,7 +93,7 @@ export const BOSS_DEFS: Record<string, BossDef> = {
     hp: 800,
     radius: 13,
     contactDamage: 12,
-    spriteKey: 'dev-boss',
+    spriteKey: 'boss-m2',
     introMs: 1400,
     p2At: 0.66,
     enrageAt: 0.33,

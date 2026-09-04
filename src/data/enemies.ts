@@ -14,6 +14,8 @@ export interface EnemyDef {
   radius: number;
   /** Peso deste inimigo no "budget" do SpawnDirector. */
   budgetCost: number;
+  /** Spritesheet usado pela representação visual na RunScene. */
+  spriteKey: string;
 }
 
 /**
@@ -22,7 +24,7 @@ export interface EnemyDef {
  * Plano 5. Valores são pontos de partida para playtest, não finais.
  */
 export const ENEMY_DEFS: Record<EnemyArchetype, EnemyDef> = {
-  crawler: { id: 'crawler', hp: 10, speed: 30, contactDamage: 6, xpValue: 1, radius: 6, budgetCost: 1 },
-  runner: { id: 'runner', hp: 6, speed: 62, contactDamage: 5, xpValue: 1, radius: 5, budgetCost: 1 },
-  brute: { id: 'brute', hp: 44, speed: 18, contactDamage: 14, xpValue: 3, radius: 10, budgetCost: 3 },
+  crawler: { id: 'crawler', hp: 10, speed: 30, contactDamage: 6, xpValue: 1, radius: 6, budgetCost: 1, spriteKey: 'crawler-walk' },
+  runner: { id: 'runner', hp: 6, speed: 62, contactDamage: 5, xpValue: 1, radius: 5, budgetCost: 1, spriteKey: 'witch-hound' },
+  brute: { id: 'brute', hp: 44, speed: 18, contactDamage: 14, xpValue: 3, radius: 10, budgetCost: 3, spriteKey: 'crypt-skeleton' },
 };
