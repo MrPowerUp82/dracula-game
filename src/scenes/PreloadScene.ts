@@ -87,5 +87,15 @@ export class PreloadScene extends Phaser.Scene {
     aura.fillCircle(48, 48, 45);
     aura.generateTexture('dev-aura', 96, 96);
     aura.destroy();
+
+    const boss = this.add.graphics();
+    boss.fillStyle(0x2a0f14, 1);
+    boss.fillRect(0, 0, 40, 52);
+    boss.fillStyle(0xb31217, 1);
+    boss.fillRect(6, 10, 28, 10);
+    boss.lineStyle(2, 0xf05030, 1);
+    boss.strokeRect(1, 1, 38, 50);
+    boss.generateTexture('dev-boss', 40, 52);
+    boss.destroy();
   }
 }

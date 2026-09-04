@@ -29,6 +29,8 @@ const JOBS = [
   { src: 'dracula_walk.jpg', name: 'dracula-walk', cols: 8, rows: 1, targetH: 64, frames: [0, 1, 2, 6, 7] },
   // Grade 7x3 do Gemini; a 1a linha é um ciclo de andar limpo.
   { src: 'm1_cursed_villager.jpg', name: 'crawler-walk', cols: 7, rows: 3, take: 7, targetH: 56 },
+  // Grade 10x5; a 4a linha (células 30-37) é um ciclo de investida legível.
+  { src: 'boss_m1_profaner_knight.jpg', name: 'boss-m1', cols: 10, rows: 5, frames: [30, 31, 32, 33, 34, 35, 36, 37], targetH: 96 },
 ];
 
 const SAT_MAX = 0.22; // acima disso, o pixel tem cor -> é personagem

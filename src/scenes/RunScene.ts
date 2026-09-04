@@ -14,6 +14,8 @@ import { AttackMotionSystem } from '../systems/AttackMotionSystem';
 import { AttackCollisionSystem } from '../systems/AttackCollisionSystem';
 import { DashSystem } from '../systems/DashSystem';
 import { RegenSystem } from '../systems/RegenSystem';
+import { BossSystem } from '../systems/BossSystem';
+import { BOSS_DEFS } from '../data/bosses';
 import { PhaserInputSource } from '../input/PhaserInputSource';
 import { MEMORIES, type MemoryDef } from '../data/memories';
 import { AURA_TEX_SIZE } from '../config/gameConfig';
@@ -31,6 +33,7 @@ export class RunScene extends Phaser.Scene {
   private enemySprites: Phaser.GameObjects.Sprite[] = [];
   private gemSprites: Phaser.GameObjects.Image[] = [];
   private attackSprites: Phaser.GameObjects.Image[] = [];
+  private bossSprite?: Phaser.GameObjects.Sprite;
   private debugText!: Phaser.GameObjects.Text;
   private pendingLevelUps = 0;
 
@@ -42,6 +45,11 @@ export class RunScene extends Phaser.Scene {
     this.kills = 0;
     this.ended = false;
     this.pendingLevelUps = 0;
+    // sprites de uma run anterior foram destruídos no restart da cena; solta as refs.
+    this.enemySprites = [];
+    this.gemSprites = [];
+    this.attackSprites = [];
+    this.bossSprite = undefined;
     this.memory = (this.registry.get('selectedMemory') as MemoryDef | undefined) ?? MEMORIES[0];
 
     const seed = Math.floor(Math.random() * 0xffffffff) >>> 0;
@@ -56,6 +64,7 @@ export class RunScene extends Phaser.Scene {
       new InputSystem(input),
       new MovementSystem(),
       new DashSystem(input),
+      new BossSystem(this.memory.bossId, this.memory.bossTimeSec),
       new PowerSystem(),
       new AttackMotionSystem(),
       new AttackCollisionSystem(),
@@ -72,6 +81,7 @@ export class RunScene extends Phaser.Scene {
     this.registerAnim('dracula-idle', 5, -1);
     this.registerAnim('dracula-walk', 9, -1);
     this.registerAnim('crawler-walk', 7, -1);
+    this.registerAnim('boss-m1', 7, -1);
 
     const hasDracula = this.textures.exists('dracula-idle');
     this.playerSprite = this.add.sprite(0, 0, hasDracula ? 'dracula-idle' : 'dev-player').setDepth(5);
@@ -113,15 +123,21 @@ export class RunScene extends Phaser.Scene {
     this.syncEnemies();
     this.syncGems();
     this.syncAttacks();
+    this.syncBoss();
 
     const p = this.world.player;
     const remaining = Math.max(
       0,
       this.memory.durationSec - Math.floor(this.world.time.elapsedMs / 1000),
     );
+    const bossInfo = this.world.boss.active
+      ? `  CHEFE ${this.world.boss.phase} ${Math.ceil(this.world.boss.hp)}/${this.world.boss.maxHp}`
+      : this.world.bossDefeated
+        ? '  CHEFE DERROTADO'
+        : '';
     this.debugText.setText(
       `HP ${Math.ceil(p.hp)}  Lv ${this.world.progression.level}  ` +
-        `abates ${this.kills}  ${remaining}s  poderes ${this.world.powers.count()}`,
+        `abates ${this.kills}  ${remaining}s  poderes ${this.world.powers.count()}${bossInfo}`,
     );
 
     const outcome = runOutcome(this.world, this.memory.durationSec);
@@ -198,6 +214,25 @@ export class RunScene extends Phaser.Scene {
       i++;
     });
     for (let j = i; j < this.attackSprites.length; j++) this.attackSprites[j].setVisible(false);
+  }
+
+  private syncBoss(): void {
+    const b = this.world.boss;
+    if (!b.active) {
+      this.bossSprite?.setVisible(false);
+      return;
+    }
+    const def = BOSS_DEFS[b.defId];
+    const key = this.textures.exists(def.spriteKey) ? def.spriteKey : 'dev-boss';
+    if (!this.bossSprite) {
+      this.bossSprite = this.add.sprite(0, 0, key).setDepth(6);
+    }
+    if (this.bossSprite.texture.key !== key) {
+      this.bossSprite.setTexture(key);
+      if (this.anims.exists(key)) this.bossSprite.play(key, true);
+    }
+    this.bossSprite.setVisible(true).setPosition(b.pos.x, b.pos.y);
+    this.bossSprite.setFlipX(this.world.player.pos.x < b.pos.x);
   }
 
   private registerAnim(key: string, frameRate: number, repeat: number): void {

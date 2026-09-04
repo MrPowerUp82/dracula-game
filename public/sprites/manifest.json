@@ -13,5 +13,10 @@
     "frameWidth": 52,
     "frameHeight": 56,
     "frameCount": 7
+  },
+  "boss-m1": {
+    "frameWidth": 88,
+    "frameHeight": 96,
+    "frameCount": 8
   }
 }
