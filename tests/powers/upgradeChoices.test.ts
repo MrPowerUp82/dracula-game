@@ -31,7 +31,7 @@ describe('rollUpgradeChoices', () => {
   it('atingido o limite de poderes, não oferece "new"', () => {
     const r = new PowerRoster();
     for (const id of ['bat-swarm', 'blood-spear', 'blood-rain', 'crimson-vigor', 'mist-form']) r.equip(id);
-    const choices = rollUpgradeChoices(r, new Rng(9), 5);
+    const choices = rollUpgradeChoices(r, new Rng(9), { maxOwned: 5 });
     expect(choices.some((c) => c.kind === 'new')).toBe(false);
   });
 
@@ -42,6 +42,14 @@ describe('rollUpgradeChoices', () => {
     r.equip('mist-form');
     const choices = rollUpgradeChoices(r, new Rng(7));
     expect(choices.some((c) => c.kind === 'evolve' && c.evolveTo === 'nosferatu')).toBe(true);
+  });
+
+  it('só oferece "new" de poderes dentro do unlockedPool', () => {
+    const r = new PowerRoster();
+    const choices = rollUpgradeChoices(r, new Rng(2), { unlockedPool: ['blood-rain'] });
+    const news = choices.filter((c) => c.kind === 'new');
+    expect(news.length).toBeGreaterThan(0);
+    for (const c of news) expect(c.powerId).toBe('blood-rain');
   });
 });
 

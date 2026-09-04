@@ -13,7 +13,13 @@ export interface UpgradeChoice {
 
 const HEAL_AMOUNT = 20;
 
-export function rollUpgradeChoices(roster: PowerRoster, rng: Rng, maxOwned = 6): UpgradeChoice[] {
+export function rollUpgradeChoices(
+  roster: PowerRoster,
+  rng: Rng,
+  opts: { maxOwned?: number; unlockedPool?: string[] } = {},
+): UpgradeChoice[] {
+  const maxOwned = opts.maxOwned ?? 6;
+  const pool = opts.unlockedPool ?? Object.keys(POWER_DEFS).filter((id) => id !== 'nosferatu');
   const cands: UpgradeChoice[] = [];
 
   for (const owned of roster.list()) {
@@ -39,8 +45,8 @@ export function rollUpgradeChoices(roster: PowerRoster, rng: Rng, maxOwned = 6):
   }
 
   if (roster.count() < maxOwned) {
-    for (const id of Object.keys(POWER_DEFS)) {
-      if (id === 'nosferatu' || roster.has(id)) continue;
+    for (const id of pool) {
+      if (id === 'nosferatu' || roster.has(id) || !POWER_DEFS[id]) continue;
       cands.push({
         kind: 'new',
         powerId: id,

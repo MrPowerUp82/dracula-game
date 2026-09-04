@@ -40,7 +40,7 @@ export class UpgradeScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(1);
 
-    this.renderChoices(rollUpgradeChoices(this.world.powers, this.world.rng));
+    this.renderChoices(rollUpgradeChoices(this.world.powers, this.world.rng, { unlockedPool: this.world.draftPool }));
   }
 
   private renderChoices(choices: UpgradeChoice[]): void {
@@ -96,7 +96,7 @@ export class UpgradeScene extends Phaser.Scene {
     if (this.rerollsLeft > 0) {
       reroll.setInteractive({ useHandCursor: true }).on('pointerup', () => {
         this.rerollsLeft--;
-        this.renderChoices(rollUpgradeChoices(this.world.powers, this.world.rng));
+        this.renderChoices(rollUpgradeChoices(this.world.powers, this.world.rng, { unlockedPool: this.world.draftPool }));
       });
     }
     this.cardObjects.push(reroll);
