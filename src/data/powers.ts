@@ -36,6 +36,9 @@ export interface PowerDef {
 export const BAT_ORBIT_SPEED = 3.2;
 export const BAT_HIT_COOLDOWN_MS = 400;
 
+/** Poderes que podem entrar no sorteio de cartas (antes de qualquer desbloqueio, só o 1º). */
+export const BASE_DRAFT_POOL: string[] = ['bat-swarm', 'blood-spear', 'blood-rain', 'crimson-vigor', 'mist-form'];
+
 export function powerLevel(def: PowerDef, level: number): PowerLevel {
   const clamped = Math.max(1, Math.min(level, def.levels.length));
   return def.levels[clamped - 1];
