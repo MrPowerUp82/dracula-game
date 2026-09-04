@@ -60,7 +60,9 @@ As transições têm pausa legível, invulnerabilidade, flash no sprite, screen 
 
 ## Validação executada
 
-- `npm run sprites`: concluído; manifest regenerado e camadas M1 processadas.
+- `npm run sprites`: concluído; manifest regenerado com 12 VFX, 4 coletáveis e 3 atlases de UI novos, além das camadas existentes.
+- Os 19 assets novos usam PNG RGBA nativo; o processador preserva alpha sem chroma-key e suporta a grade irregular 6+5+3 do `fx-wolf-pack`.
+- Auditoria dos sprites: **19/19** arquivos com contagem de frames, dimensões do manifesto e transparência válidas.
 - `npm run typecheck`: concluído sem erros.
 - `npm test -- --run`: **53 arquivos, 198 testes aprovados**.
 - `npm run build`: concluído; Vite gerou o bundle de produção.

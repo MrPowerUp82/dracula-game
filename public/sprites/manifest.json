@@ -108,5 +108,100 @@
     "frameWidth": 74,
     "frameHeight": 48,
     "frameCount": 9
+  },
+  "fx-nosferatu-swarm": {
+    "frameWidth": 62,
+    "frameHeight": 64,
+    "frameCount": 10
+  },
+  "fx-mist-trail": {
+    "frameWidth": 23,
+    "frameHeight": 48,
+    "frameCount": 10
+  },
+  "fx-blood-rain": {
+    "frameWidth": 71,
+    "frameHeight": 96,
+    "frameCount": 10
+  },
+  "fx-wolf-pack": {
+    "frameWidth": 153,
+    "frameHeight": 64,
+    "frameCount": 14
+  },
+  "fx-dominion-of-night": {
+    "frameWidth": 480,
+    "frameHeight": 270,
+    "frameCount": 6
+  },
+  "fx-blood-spear": {
+    "frameWidth": 41,
+    "frameHeight": 48,
+    "frameCount": 9
+  },
+  "fx-crimson-chains": {
+    "frameWidth": 53,
+    "frameHeight": 64,
+    "frameCount": 10
+  },
+  "fx-coffin-nova": {
+    "frameWidth": 51,
+    "frameHeight": 96,
+    "frameCount": 10
+  },
+  "fx-hellfire-ward": {
+    "frameWidth": 36,
+    "frameHeight": 48,
+    "frameCount": 10
+  },
+  "fx-bone-wall": {
+    "frameWidth": 41,
+    "frameHeight": 64,
+    "frameCount": 10
+  },
+  "fx-nightmare-aura": {
+    "frameWidth": 90,
+    "frameHeight": 96,
+    "frameCount": 10
+  },
+  "fx-sanguine-familiar": {
+    "frameWidth": 36,
+    "frameHeight": 48,
+    "frameCount": 14
+  },
+  "pickup-blood-gem": {
+    "frameWidth": 24,
+    "frameHeight": 32,
+    "frameCount": 18
+  },
+  "pickup-blood-essence": {
+    "frameWidth": 20,
+    "frameHeight": 32,
+    "frameCount": 6
+  },
+  "pickup-heart": {
+    "frameWidth": 23,
+    "frameHeight": 32,
+    "frameCount": 6
+  },
+  "pickup-relic-chest": {
+    "frameWidth": 23,
+    "frameHeight": 48,
+    "frameCount": 9
+  },
+  "ui-power-card-frames": {
+    "frameWidth": 293,
+    "frameHeight": 420,
+    "frameCount": 3
+  },
+  "ui-hud-icons": {
+    "frameWidth": 17,
+    "frameHeight": 24,
+    "frameCount": 7
+  },
+  "ui-target-reticle": {
+    "frameWidth": 29,
+    "frameHeight": 32,
+    "frameCount": 7
   }
 }

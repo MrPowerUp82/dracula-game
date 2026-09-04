@@ -1,10 +1,9 @@
-// Processa os sprites brutos do Gemini (sprites/*.jpg) em spritesheets prontos
+// Processa os sprites brutos do gerador (sprites/*.jpg ou *.png) em spritesheets prontos
 // para o Phaser (public/sprites/*.png + .json).
 //
-// O Gemini ignora "fundo transparente" e pinta um xadrez cinza no lugar. Este
-// script remove esse xadrez por chroma-key (pixels quase-neutros dentro da
-// faixa de luminância do xadrez viram alfa 0), recorta a área útil comum a
-// todos os frames, redimensiona para a altura-alvo e monta uma tira horizontal.
+// Fontes JPG antigas trazem um xadrez no lugar do fundo transparente; nelas o
+// script aplica chroma-key. Fontes PNG RGBA preservam o alpha original. Depois,
+// a área útil é recortada, redimensionada e consolidada numa tira horizontal.
 //
 // Uso: node tools/process-sprites.mjs
 
@@ -18,8 +17,9 @@ const SRC = resolve(ROOT, 'sprites');
 const OUT = resolve(ROOT, 'public/sprites');
 
 /**
- * @type {{src:string,name:string,cols:number,rows:number,targetH:number,
- *         take?:number,frames?:number[]}[]}
+ * @type {{src:string,name:string,cols?:number,rows?:number,targetH:number,
+ *         take?:number,frames?:number[],keepCellBounds?:boolean,
+ *         rects?:{left:number,top:number,width:number,height:number}[]}[]}
  * `frames` = índices de célula (linha-a-linha) a incluir, nesta ordem.
  * `take` = pega as N primeiras células. Sem nenhum dos dois, usa todas.
  */
@@ -66,7 +66,38 @@ const JOBS = [
 
   // VFX
   { src: 'fx_bat_swarm.jpg', name: 'fx-bat-swarm', cols: 7, rows: 3, take: 10, targetH: 48 },
-  { src: 'fx_claw_scratch.jpg', name: 'fx-claw-scratch', cols: 7, rows: 3, take: 9, targetH: 48 }
+  { src: 'fx_claw_scratch.jpg', name: 'fx-claw-scratch', cols: 7, rows: 3, take: 9, targetH: 48 },
+  { src: 'fx_nosferatu_swarm.png', name: 'fx-nosferatu-swarm', cols: 5, rows: 2, targetH: 64 },
+  { src: 'fx_mist_trail.png', name: 'fx-mist-trail', cols: 10, rows: 1, targetH: 48 },
+  { src: 'fx_blood_rain.png', name: 'fx-blood-rain', cols: 10, rows: 1, targetH: 96 },
+  {
+    src: 'fx_wolf_pack.png',
+    name: 'fx-wolf-pack',
+    targetH: 64,
+    // O gerador distribuiu os 14 quadros em linhas de 6, 5 e 3.
+    rects: [
+      ...Array.from({ length: 6 }, (_, i) => ({ left: i * 276, top: 80, width: i === 5 ? 279 : 276, height: 280 })),
+      ...Array.from({ length: 5 }, (_, i) => ({ left: i * 332, top: 350, width: i === 4 ? 331 : 332, height: 300 })),
+      ...Array.from({ length: 3 }, (_, i) => ({ left: i * 553, top: 630, width: 553, height: 318 })),
+    ],
+  },
+  { src: 'fx_dominion_of_night.png', name: 'fx-dominion-of-night', cols: 3, rows: 2, targetH: 270, keepCellBounds: true },
+  { src: 'fx_blood_spear.png', name: 'fx-blood-spear', cols: 9, rows: 1, targetH: 48 },
+  { src: 'fx_crimson_chains.png', name: 'fx-crimson-chains', cols: 10, rows: 1, targetH: 64 },
+  { src: 'fx_coffin_nova.png', name: 'fx-coffin-nova', cols: 10, rows: 1, targetH: 96 },
+  { src: 'fx_hellfire_ward.png', name: 'fx-hellfire-ward', cols: 10, rows: 1, targetH: 48 },
+  { src: 'fx_bone_wall.png', name: 'fx-bone-wall', cols: 5, rows: 2, targetH: 64 },
+  { src: 'fx_nightmare_aura.png', name: 'fx-nightmare-aura', cols: 5, rows: 2, targetH: 96 },
+  { src: 'fx_sanguine_familiar.png', name: 'fx-sanguine-familiar', cols: 7, rows: 2, targetH: 48 },
+
+  // Coletáveis e UI
+  { src: 'pickup_blood_gem.png', name: 'pickup-blood-gem', cols: 6, rows: 3, targetH: 32 },
+  { src: 'pickup_blood_essence.png', name: 'pickup-blood-essence', cols: 6, rows: 1, targetH: 32 },
+  { src: 'pickup_heart.png', name: 'pickup-heart', cols: 6, rows: 1, targetH: 32 },
+  { src: 'pickup_relic_chest.png', name: 'pickup-relic-chest', cols: 9, rows: 1, targetH: 48 },
+  { src: 'ui_power_card_frames.png', name: 'ui-power-card-frames', cols: 3, rows: 1, targetH: 420 },
+  { src: 'ui_hud_icons.png', name: 'ui-hud-icons', cols: 7, rows: 1, targetH: 24 },
+  { src: 'ui_target_reticle.png', name: 'ui-target-reticle', cols: 7, rows: 1, targetH: 32 },
 ];
 
 // Camadas de cenário não são spritesheets, mas passam pelo mesmo chroma-key
@@ -211,6 +242,72 @@ async function run() {
     const W = meta.width;
     const H = meta.height;
 
+    if (job.rects) {
+      const raw = new Uint8Array(await sharp(input).ensureAlpha().raw().toBuffer());
+      if (!meta.hasAlpha) keyOutChecker(raw, W, H);
+
+      const prepared = [];
+      let maxAspect = 0;
+      for (const rect of job.rects) {
+        const cell = new Uint8Array(rect.width * rect.height * 4);
+        for (let y = 0; y < rect.height; y++) {
+          const srcRow = ((rect.top + y) * W + rect.left) * 4;
+          cell.set(raw.subarray(srcRow, srcRow + rect.width * 4), y * rect.width * 4);
+        }
+        const bounds = contentBox(cell, rect.width, rect.height);
+        if (bounds.maxX < 0) throw new Error(`${job.name}: recorte sem conteúdo`);
+        const pad = 4;
+        const left = Math.max(0, bounds.minX - pad);
+        const top = Math.max(0, bounds.minY - pad);
+        const right = Math.min(rect.width - 1, bounds.maxX + pad);
+        const bottom = Math.min(rect.height - 1, bounds.maxY + pad);
+        const cropW = right - left + 1;
+        const cropH = bottom - top + 1;
+        const cropped = new Uint8Array(cropW * cropH * 4);
+        for (let y = 0; y < cropH; y++) {
+          const srcRow = ((top + y) * rect.width + left) * 4;
+          cropped.set(cell.subarray(srcRow, srcRow + cropW * 4), y * cropW * 4);
+        }
+        prepared.push({ cropped, cropW, cropH });
+        maxAspect = Math.max(maxAspect, cropW / cropH);
+      }
+
+      const frameH = job.targetH;
+      const frameW = Math.max(1, Math.round(frameH * maxAspect));
+      const composites = [];
+      for (let i = 0; i < prepared.length; i++) {
+        const frame = prepared[i];
+        const scale = Math.min(frameW / frame.cropW, frameH / frame.cropH);
+        const width = Math.max(1, Math.round(frame.cropW * scale));
+        const height = Math.max(1, Math.round(frame.cropH * scale));
+        const png = await sharp(frame.cropped, {
+          raw: { width: frame.cropW, height: frame.cropH, channels: 4 },
+        })
+          .resize(width, height, { fit: 'fill', kernel: 'nearest' })
+          .png()
+          .toBuffer();
+        composites.push({
+          input: png,
+          left: i * frameW + Math.floor((frameW - width) / 2),
+          top: frameH - height,
+        });
+      }
+      await sharp({
+        create: {
+          width: frameW * prepared.length,
+          height: frameH,
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        },
+      })
+        .composite(composites)
+        .png()
+        .toFile(resolve(OUT, `${job.name}.png`));
+      manifest[job.name] = { frameWidth: frameW, frameHeight: frameH, frameCount: prepared.length };
+      console.log(`${job.name}: ${prepared.length} recortes @ ${frameW}x${frameH}`);
+      continue;
+    }
+
     if (job.customCenters) {
       const frameCount = job.customCenters.length;
       const cropW = job.cropW;
@@ -269,7 +366,9 @@ async function run() {
     }
 
     const raw = new Uint8Array(await sharp(input).ensureAlpha().raw().toBuffer());
-    keyOutChecker(raw, W, H);
+    // PNGs gerados com alpha real não devem passar por chroma-key: isso
+    // apagaria névoa, brilhos e pixels semitransparentes dos VFX.
+    if (!meta.hasAlpha) keyOutChecker(raw, W, H);
 
     const cellW = Math.floor(W / job.cols);
     const cellH = Math.floor(H / job.rows);
@@ -292,20 +391,24 @@ async function run() {
     }
 
     // 2) caixa de conteúdo comum a todos os frames (pivô consistente)
-    let box = { minX: cellW, minY: cellH, maxX: -1, maxY: -1 };
-    for (const c of cells) {
-      const b = contentBox(c.buf, cellW, cellH);
-      if (b.maxX < 0) continue;
-      box.minX = Math.min(box.minX, b.minX);
-      box.minY = Math.min(box.minY, b.minY);
-      box.maxX = Math.max(box.maxX, b.maxX);
-      box.maxY = Math.max(box.maxY, b.maxY);
+    let box = job.keepCellBounds
+      ? { minX: 0, minY: 0, maxX: cellW - 1, maxY: cellH - 1 }
+      : { minX: cellW, minY: cellH, maxX: -1, maxY: -1 };
+    if (!job.keepCellBounds) {
+      for (const c of cells) {
+        const b = contentBox(c.buf, cellW, cellH);
+        if (b.maxX < 0) continue;
+        box.minX = Math.min(box.minX, b.minX);
+        box.minY = Math.min(box.minY, b.minY);
+        box.maxX = Math.max(box.maxX, b.maxX);
+        box.maxY = Math.max(box.maxY, b.maxY);
+      }
+      const pad = 4;
+      box.minX = Math.max(0, box.minX - pad);
+      box.minY = Math.max(0, box.minY - pad);
+      box.maxX = Math.min(cellW - 1, box.maxX + pad);
+      box.maxY = Math.min(cellH - 1, box.maxY + pad);
     }
-    const pad = 4;
-    box.minX = Math.max(0, box.minX - pad);
-    box.minY = Math.max(0, box.minY - pad);
-    box.maxX = Math.min(cellW - 1, box.maxX + pad);
-    box.maxY = Math.min(cellH - 1, box.maxY + pad);
     const cropW = box.maxX - box.minX + 1;
     const cropH = box.maxY - box.minY + 1;
 
@@ -346,7 +449,7 @@ async function run() {
     const image = sharp(input).ensureAlpha();
     const meta = await image.metadata();
     const raw = new Uint8Array(await image.raw().toBuffer());
-    keyOutChecker(raw, meta.width, meta.height);
+    if (!meta.hasAlpha) keyOutChecker(raw, meta.width, meta.height);
     await sharp(raw, { raw: { width: meta.width, height: meta.height, channels: 4 } })
       .png()
       .toFile(resolve(OUT, `${job.name}.png`));
