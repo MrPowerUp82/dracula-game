@@ -20,7 +20,11 @@ export class HubScene extends Phaser.Scene {
 
   create(): void {
     this.save = this.registry.get('save') as SaveDataV1;
-    this.add.rectangle(0, 0, LOGICAL_WIDTH, 32, 0x120a16).setOrigin(0);
+    if (this.textures.exists('env-hub')) {
+      this.add.image(LOGICAL_WIDTH / 2, 125, 'env-hub').setDisplaySize(LOGICAL_WIDTH, 270).setAlpha(0.42);
+    }
+    this.add.rectangle(0, 0, LOGICAL_WIDTH, 270, 0x05030a, 0.48).setOrigin(0);
+    this.add.rectangle(0, 0, LOGICAL_WIDTH, 32, 0x120a16, 0.9).setOrigin(0);
     this.add
       .text(LOGICAL_WIDTH / 2, 10, 'CASTELO EM RUÍNAS', { fontFamily: MONO, fontSize: '11px', color: '#e8d0d0' })
       .setOrigin(0.5, 0);
@@ -47,7 +51,7 @@ export class HubScene extends Phaser.Scene {
       const done = this.save.memoriesCleared.includes(m.id);
       this.row(y, `${unlocked ? '▶' : '🔒'} ${m.name}${done ? '  (concluída)' : ''}`, unlocked, () => {
         this.registry.set('selectedMemory', m);
-        this.scene.start('Run');
+        this.scene.start('MemoryIntro', { memory: m });
       });
       y += 14;
     });

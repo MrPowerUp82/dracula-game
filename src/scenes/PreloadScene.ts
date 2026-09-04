@@ -19,13 +19,22 @@ export class PreloadScene extends Phaser.Scene {
 
   preload(): void {
     this.load.json('sprite-manifest', 'sprites/manifest.json');
+    this.load.image('art-title', 'sprites/art_title_key_art.jpg');
+    this.load.image('art-memory1', 'sprites/art_memory1_the_awakening.jpg');
+    this.load.image('env-hub', 'sprites/env_hub_ruined_castle.jpg');
+    this.load.image('env-m1-far', 'sprites/env_m1_courtyard_far.jpg');
+    this.load.image('env-m1-mid', 'sprites/env_m1_courtyard_mid.png');
+    this.load.image('env-m1-near', 'sprites/env_m1_courtyard_near.png');
+    this.load.image('env-m2-far', 'sprites/env_m2_village_far.png');
+    this.load.image('env-m2-mid', 'sprites/env_m2_village_mid.png');
+    this.load.image('env-m2-near', 'sprites/env_m2_village_near.png');
     this.makeDevTextures();
   }
 
   create(): void {
     const manifest = this.cache.json.get('sprite-manifest') as SpriteManifest | undefined;
     if (!manifest) {
-      this.scene.start('Hub');
+      this.scene.start('Title');
       return;
     }
 
@@ -36,7 +45,7 @@ export class PreloadScene extends Phaser.Scene {
       });
     }
 
-    this.load.once(Phaser.Loader.Events.COMPLETE, () => this.scene.start('Hub'));
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => this.scene.start('Title'));
     this.load.start();
   }
 

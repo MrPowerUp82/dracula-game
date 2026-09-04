@@ -6,6 +6,9 @@ import { HubScene } from './scenes/HubScene';
 import { RunScene } from './scenes/RunScene';
 import { UpgradeScene } from './scenes/UpgradeScene';
 import { RunEndScene } from './scenes/RunEndScene';
+import { TitleScene } from './scenes/TitleScene';
+import { MemoryIntroScene } from './scenes/MemoryIntroScene';
+import { HUDScene } from './scenes/HUDScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -19,7 +22,7 @@ const config: Phaser.Types.Core.GameConfig = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   physics: { default: 'arcade', arcade: { debug: false } },
-  scene: [BootScene, PreloadScene, HubScene, RunScene, UpgradeScene, RunEndScene],
+  scene: [BootScene, PreloadScene, TitleScene, HubScene, MemoryIntroScene, RunScene, HUDScene, UpgradeScene, RunEndScene],
 };
 
 const game = new Phaser.Game(config);

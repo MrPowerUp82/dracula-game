@@ -23,6 +23,7 @@ import { AURA_TEX_SIZE } from '../config/gameConfig';
 import { applyMetaToWorld } from '../save/applyToRun';
 import { runOutcome } from '../run/runEnd';
 import type { SaveDataV1 } from '../save/SaveData';
+import { ParallaxBackground } from '../ui/ParallaxBackground';
 
 export class RunScene extends Phaser.Scene {
   private world!: World;
@@ -39,6 +40,7 @@ export class RunScene extends Phaser.Scene {
   private bossSprite?: Phaser.GameObjects.Sprite;
   private debugText!: Phaser.GameObjects.Text;
   private pendingLevelUps = 0;
+  private parallax!: ParallaxBackground;
 
   constructor() {
     super('Run');
@@ -82,6 +84,7 @@ export class RunScene extends Phaser.Scene {
     this.add.grid(0, 0, 4000, 4000, 32, 32, 0x140d1c, 1, 0x241a30, 1).setDepth(-10);
 
     this.registerManifestAnimations();
+    this.parallax = new ParallaxBackground(this, this.memory.id);
 
     const hasDracula = this.textures.exists('dracula-idle');
     this.playerSprite = this.add.sprite(0, 0, hasDracula ? 'dracula-idle' : 'dev-player').setDepth(5);
@@ -91,6 +94,8 @@ export class RunScene extends Phaser.Scene {
       .text(6, 6, '', { fontFamily: 'monospace', fontSize: '10px', color: '#e8d0d0' })
       .setScrollFactor(0)
       .setDepth(100);
+
+    this.scene.launch('HUD', { world: this.world });
 
     this.world.events.on('enemy:died', () => {
       this.kills++;
@@ -130,6 +135,7 @@ export class RunScene extends Phaser.Scene {
     this.syncGems();
     this.syncAttacks();
     this.syncBoss();
+    this.parallax.update(this.world.camera.x);
 
     const p = this.world.player;
     const remaining = Math.max(
@@ -150,6 +156,7 @@ export class RunScene extends Phaser.Scene {
     if (outcome !== 'running') {
       this.ended = true;
       this.scene.stop('Upgrade');
+      this.scene.stop('HUD');
       this.scene.start('RunEnd', {
         memoryId: this.memory.id,
         kills: this.kills,
@@ -185,8 +192,8 @@ export class RunScene extends Phaser.Scene {
         this.enemySprites[i] = s;
       }
       const def = this.getEnemyDef(e.defId);
-      const useArt = !!def?.spriteKey && this.textures.exists(def.spriteKey);
-      const tex = useArt ? def.spriteKey : 'dev-enemy';
+      const tex = this.enemySpriteKey(e.defId, this.memory.id);
+      const useArt = this.textures.exists(tex);
       if (s.texture.key !== tex) s.setTexture(tex);
       if (useArt && this.anims.exists(tex) && s.anims.getName() !== tex) s.play(tex, true);
       if (!useArt) s.anims.stop();
@@ -195,6 +202,16 @@ export class RunScene extends Phaser.Scene {
       i++;
     });
     for (let j = i; j < this.enemySprites.length; j++) this.enemySprites[j].setVisible(false);
+  }
+
+
+  private enemySpriteKey(defId: string, memoryId: string): string {
+    const map: Record<string, Record<string, string>> = {
+      m1: { crawler: 'crawler-walk', runner: 'risen-servant', brute: 'crypt-skeleton' },
+      m2: { crawler: 'torch-peasant', runner: 'witch-hound', brute: 'flagellant-bomber' },
+      m3: { crawler: 'crawler-walk', runner: 'witch-hound', brute: 'crypt-skeleton' },
+    };
+    return map[memoryId]?.[defId] ?? this.getEnemyDef(defId)?.spriteKey ?? 'dev-enemy';
   }
 
   private syncGems(): void {
