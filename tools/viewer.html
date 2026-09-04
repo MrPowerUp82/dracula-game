@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<body style="background: #333; color: white; font-family: sans-serif;">
+  <script>
+    const files = [
+      'm2_torch_peasant.jpg',
+      'm2_witch_hound.jpg',
+      'm2_inquisitor_gunner.jpg',
+      'm2_flagellant_bomber.jpg',
+      'm2_zealot_preacher.jpg',
+      'm2_elite_pyre_warden.jpg',
+      'boss_m2_grand_inquisitor.jpg'
+    ];
+    for (const f of files) {
+      document.write('<h3>' + f + '</h3>');
+      document.write('<div style="position: relative; display: inline-block;">');
+      document.write('<img src="../sprites/' + f + '" style="width: 800px; display: block;">');
+      // add some common grid overlays
+      document.write('</div><hr>');
+    }
+  </script>
+</body>
+</html>

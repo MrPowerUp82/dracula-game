@@ -9,14 +9,104 @@
     "frameHeight": 64,
     "frameCount": 6
   },
+  "dracula-dash": {
+    "frameWidth": 74,
+    "frameHeight": 64,
+    "frameCount": 4
+  },
+  "dracula-hurt": {
+    "frameWidth": 54,
+    "frameHeight": 64,
+    "frameCount": 2
+  },
+  "dracula-cast": {
+    "frameWidth": 39,
+    "frameHeight": 64,
+    "frameCount": 4
+  },
+  "dracula-death": {
+    "frameWidth": 65,
+    "frameHeight": 64,
+    "frameCount": 6
+  },
+  "dracula-levelup": {
+    "frameWidth": 65,
+    "frameHeight": 64,
+    "frameCount": 4
+  },
   "crawler-walk": {
     "frameWidth": 52,
     "frameHeight": 56,
     "frameCount": 7
   },
+  "crypt-skeleton": {
+    "frameWidth": 61,
+    "frameHeight": 64,
+    "frameCount": 17
+  },
+  "elite-profaned-sentinel": {
+    "frameWidth": 75,
+    "frameHeight": 96,
+    "frameCount": 19
+  },
+  "grave-crow": {
+    "frameWidth": 69,
+    "frameHeight": 64,
+    "frameCount": 17
+  },
+  "risen-servant": {
+    "frameWidth": 57,
+    "frameHeight": 64,
+    "frameCount": 17
+  },
   "boss-m1": {
     "frameWidth": 88,
     "frameHeight": 96,
     "frameCount": 8
+  },
+  "torch-peasant": {
+    "frameWidth": 32,
+    "frameHeight": 64,
+    "frameCount": 17
+  },
+  "witch-hound": {
+    "frameWidth": 38,
+    "frameHeight": 64,
+    "frameCount": 15
+  },
+  "inquisitor-gunner": {
+    "frameWidth": 53,
+    "frameHeight": 64,
+    "frameCount": 17
+  },
+  "flagellant-bomber": {
+    "frameWidth": 32,
+    "frameHeight": 64,
+    "frameCount": 17
+  },
+  "zealot-preacher": {
+    "frameWidth": 49,
+    "frameHeight": 64,
+    "frameCount": 17
+  },
+  "elite-pyre-warden": {
+    "frameWidth": 64,
+    "frameHeight": 96,
+    "frameCount": 19
+  },
+  "boss-m2": {
+    "frameWidth": 96,
+    "frameHeight": 128,
+    "frameCount": 39
+  },
+  "fx-bat-swarm": {
+    "frameWidth": 38,
+    "frameHeight": 48,
+    "frameCount": 10
+  },
+  "fx-claw-scratch": {
+    "frameWidth": 74,
+    "frameHeight": 48,
+    "frameCount": 9
   }
 }

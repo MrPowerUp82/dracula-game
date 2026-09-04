@@ -35,10 +35,38 @@ const JOBS = [
     cropH: 320,
     top: 55,
   },
+  { src: 'dracula_dash.jpg', name: 'dracula-dash', cols: 4, rows: 1, targetH: 64 },
+  { src: 'dracula_hurt.jpg', name: 'dracula-hurt', cols: 2, rows: 1, targetH: 64 },
+  { src: 'dracula_cast.jpg', name: 'dracula-cast', cols: 4, rows: 1, targetH: 64 },
+  { src: 'dracula_death.jpg', name: 'dracula-death', cols: 6, rows: 1, targetH: 64 },
+  { src: 'dracula_levelup.jpg', name: 'dracula-levelup', cols: 4, rows: 1, targetH: 64 },
+
   // Grade 7x3 do Gemini; a 1a linha é um ciclo de andar limpo.
   { src: 'm1_cursed_villager.jpg', name: 'crawler-walk', cols: 7, rows: 3, take: 7, targetH: 56 },
+  
+  // Outros monstros de M1
+  { src: 'm1_crypt_skeleton.jpg', name: 'crypt-skeleton', cols: 7, rows: 3, take: 17, targetH: 64 },
+  { src: 'm1_elite_profaned_sentinel.jpg', name: 'elite-profaned-sentinel', cols: 7, rows: 3, take: 19, targetH: 96 },
+  { src: 'm1_grave_crow.jpg', name: 'grave-crow', cols: 7, rows: 3, take: 17, targetH: 64 },
+  { src: 'm1_risen_servant.jpg', name: 'risen-servant', cols: 7, rows: 3, take: 17, targetH: 64 },
+
   // Grade 10x5; a 4a linha (células 30-37) é um ciclo de investida legível.
   { src: 'boss_m1_profaner_knight.jpg', name: 'boss-m1', cols: 10, rows: 5, frames: [30, 31, 32, 33, 34, 35, 36, 37], targetH: 96 },
+
+  // Monstros de M2
+  { src: 'm2_torch_peasant.jpg', name: 'torch-peasant', cols: 6, rows: 3, take: 17, targetH: 64 },
+  { src: 'm2_witch_hound.jpg', name: 'witch-hound', cols: 5, rows: 3, take: 15, targetH: 64 },
+  { src: 'm2_inquisitor_gunner.jpg', name: 'inquisitor-gunner', cols: 5, rows: 4, take: 17, targetH: 64 },
+  { src: 'm2_flagellant_bomber.jpg', name: 'flagellant-bomber', cols: 6, rows: 3, take: 17, targetH: 64 },
+  { src: 'm2_zealot_preacher.jpg', name: 'zealot-preacher', cols: 6, rows: 4, take: 17, targetH: 64 },
+  { src: 'm2_elite_pyre_warden.jpg', name: 'elite-pyre-warden', cols: 6, rows: 4, take: 19, targetH: 96 },
+  
+  // Chefe de M2
+  { src: 'boss_m2_grand_inquisitor.jpg', name: 'boss-m2', cols: 8, rows: 6, take: 39, targetH: 128 },
+
+  // VFX
+  { src: 'fx_bat_swarm.jpg', name: 'fx-bat-swarm', cols: 7, rows: 3, take: 10, targetH: 48 },
+  { src: 'fx_claw_scratch.jpg', name: 'fx-claw-scratch', cols: 7, rows: 3, take: 9, targetH: 48 }
 ];
 
 const SAT_MAX = 0.22; // acima disso, o pixel tem cor -> é personagem
