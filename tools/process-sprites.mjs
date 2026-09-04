@@ -25,8 +25,16 @@ const OUT = resolve(ROOT, 'public/sprites');
  */
 const JOBS = [
   { src: 'dracula_idle.jpg', name: 'dracula-idle', cols: 4, rows: 1, targetH: 64 },
-  // O Gemini dissolveu o frame 4 em névoa; usamos só as poses legíveis.
-  { src: 'dracula_walk.jpg', name: 'dracula-walk', cols: 8, rows: 1, targetH: 64, frames: [0, 1, 2, 6, 7] },
+  // Ciclo de caminhada limpo de 6 frames, recortado com centros precisos e alinhamento de piso consistente.
+  {
+    src: 'dracula_walk.jpg',
+    name: 'dracula-walk',
+    targetH: 64,
+    customCenters: [122.5, 346.5, 568.5, 793.0, 1020.0, 1243.5],
+    cropW: 216,
+    cropH: 320,
+    top: 55,
+  },
   // Grade 7x3 do Gemini; a 1a linha é um ciclo de andar limpo.
   { src: 'm1_cursed_villager.jpg', name: 'crawler-walk', cols: 7, rows: 3, take: 7, targetH: 56 },
   // Grade 10x5; a 4a linha (células 30-37) é um ciclo de investida legível.
@@ -167,6 +175,64 @@ async function run() {
     const meta = await sharp(input).metadata();
     const W = meta.width;
     const H = meta.height;
+
+    if (job.customCenters) {
+      const frameCount = job.customCenters.length;
+      const cropW = job.cropW;
+      const cropH = job.cropH;
+      const top = job.top;
+      const targetH = job.targetH;
+      const frameW = Math.round(cropW * (targetH / cropH));
+      const frameH = targetH;
+      const rawRgb = new Uint8Array(await sharp(input).raw().toBuffer());
+      const frames = [];
+
+      for (let i = 0; i < frameCount; i++) {
+        const cx = Math.round(job.customCenters[i]);
+        const left = cx - Math.floor(cropW / 2);
+        const cellBuf = new Uint8Array(cropW * cropH * 4);
+        for (let y = 0; y < cropH; y++) {
+          for (let x = 0; x < cropW; x++) {
+            const srcX = left + x;
+            const srcY = top + y;
+            const srcIdx = (srcY * W + srcX) * 3;
+            const dstIdx = (y * cropW + x) * 4;
+            const r = rawRgb[srcIdx];
+            const g = rawRgb[srcIdx + 1];
+            const b = rawRgb[srcIdx + 2];
+            const diff = Math.abs(r - 124) + Math.abs(g - 124) + Math.abs(b - 124);
+            if (diff < 70) {
+              cellBuf[dstIdx + 3] = 0;
+            } else {
+              cellBuf[dstIdx] = r;
+              cellBuf[dstIdx + 1] = g;
+              cellBuf[dstIdx + 2] = b;
+              cellBuf[dstIdx + 3] = 255;
+            }
+          }
+        }
+        const png = await sharp(cellBuf, { raw: { width: cropW, height: cropH, channels: 4 } })
+          .resize(frameW, frameH, { fit: 'fill', kernel: 'nearest' })
+          .png()
+          .toBuffer();
+        frames.push(png);
+      }
+
+      const sheet = sharp({
+        create: {
+          width: frameW * frameCount,
+          height: frameH,
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        },
+      });
+      const composites = frames.map((f, i) => ({ input: f, left: i * frameW, top: 0 }));
+      await sheet.composite(composites).png().toFile(resolve(OUT, `${job.name}.png`));
+      manifest[job.name] = { frameWidth: frameW, frameHeight: frameH, frameCount };
+      console.log(`${job.name}: ${frameCount} frames @ ${frameW}x${frameH}`);
+      continue;
+    }
+
     const raw = new Uint8Array(await sharp(input).ensureAlpha().raw().toBuffer());
     keyOutChecker(raw, W, H);
 

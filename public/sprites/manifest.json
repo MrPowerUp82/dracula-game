@@ -5,9 +5,9 @@
     "frameCount": 4
   },
   "dracula-walk": {
-    "frameWidth": 57,
+    "frameWidth": 43,
     "frameHeight": 64,
-    "frameCount": 5
+    "frameCount": 6
   },
   "crawler-walk": {
     "frameWidth": 52,
