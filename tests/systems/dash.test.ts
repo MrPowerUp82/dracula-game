@@ -16,6 +16,8 @@ describe('DashSystem', () => {
 
   it('com mist-form, teleporta na direção do intent e dá i-frames', () => {
     const world = createWorld(1);
+    let trail: { fromX: number; fromY: number; toX: number; toY: number } | undefined;
+    world.events.on('player:dashed', (payload) => { trail = payload; });
     world.powers.equip('mist-form');
     world.player.intent.x = 1;
     world.player.intent.y = 0;
@@ -23,6 +25,7 @@ describe('DashSystem', () => {
     new DashSystem(dashInput(() => true)).update(world, 16);
     expect(world.player.pos.x).toBeGreaterThan(0);
     expect(world.player.invulnUntilMs).toBeGreaterThan(world.time.elapsedMs);
+    expect(trail).toEqual({ fromX: 0, fromY: 0, toX: world.player.pos.x, toY: 0 });
   });
 
   it('respeita o cooldown entre dashes', () => {

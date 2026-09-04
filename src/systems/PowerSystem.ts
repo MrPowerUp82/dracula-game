@@ -59,7 +59,11 @@ export class PowerSystem implements System {
           a.hitCooldownMs = BAT_HIT_COOLDOWN_MS;
           a.lifespanMs = Infinity;
           a.ownerPowerId = def.id;
-          a.spriteKey = def.id === 'wolf-pack' && world.powers.has('wolf-pack') ? 'witch-hound' : 'fx-bat-swarm';
+          a.spriteKey = def.id === 'wolf-pack'
+            ? 'fx-wolf-pack'
+            : def.id === 'nosferatu'
+              ? 'fx-nosferatu-swarm'
+              : 'fx-bat-swarm';
         }
       } else if (def.behavior === 'aura') {
         const a = world.attacks.acquire();
@@ -70,7 +74,7 @@ export class PowerSystem implements System {
           a.hitCooldownMs = lv.cooldownMs ?? 500;
           a.lifespanMs = Infinity;
           a.ownerPowerId = def.id;
-          a.spriteKey = 'dev-aura';
+          a.spriteKey = def.id === 'blood-rain' ? 'fx-blood-rain' : 'dev-aura';
         }
       }
     }
@@ -105,7 +109,7 @@ export class PowerSystem implements System {
       a.hitCooldownMs = 0;
       a.lifespanMs = 1600;
       a.ownerPowerId = owned.def.id;
-      a.spriteKey = 'dev-spear';
+      a.spriteKey = owned.def.id === 'blood-spear' ? 'fx-blood-spear' : 'dev-spear';
     }
   }
 

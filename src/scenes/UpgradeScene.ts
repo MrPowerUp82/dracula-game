@@ -51,41 +51,64 @@ export class UpgradeScene extends Phaser.Scene {
     const gap = 12;
     const totalW = choices.length * cardW + (choices.length - 1) * gap;
     const startX = (LOGICAL_WIDTH - totalW) / 2;
-    const y = 60;
+    const y = 52;
+    const cardH = 168;
+    const hasFrames = this.textures.exists('ui-power-card-frames');
 
     choices.forEach((choice, i) => {
       const x = startX + i * (cardW + gap);
-      const box = this.add
-        .rectangle(x, y, cardW, 120, 0x1a1420, 1)
+      const backdrop = this.add
+        .rectangle(x, y, cardW, cardH, 0x100b16, 0.96)
         .setOrigin(0)
         .setScrollFactor(0)
-        .setStrokeStyle(2, choice.kind === 'evolve' ? 0xb31217 : 0x554455)
-        .setDepth(1)
-        .setInteractive({ useHandCursor: true });
+        .setDepth(1);
+      let hitTarget: Phaser.GameObjects.Rectangle | Phaser.GameObjects.Image = backdrop;
+      this.cardObjects.push(backdrop);
+      if (hasFrames) {
+        const frame = choice.kind === 'evolve' ? 2 : choice.kind === 'new' ? 1 : 0;
+        const frameImage = this.add
+          .image(x + cardW / 2, y + cardH / 2, 'ui-power-card-frames', frame)
+          .setDisplaySize(cardW, cardH)
+          .setScrollFactor(0)
+          .setDepth(2)
+          .setInteractive({ useHandCursor: true });
+        hitTarget = frameImage;
+        this.cardObjects.push(frameImage);
+      } else {
+        backdrop
+          .setStrokeStyle(2, choice.kind === 'evolve' ? 0xb31217 : 0x554455)
+          .setInteractive({ useHandCursor: true });
+      }
       const title = this.add
-        .text(x + 8, y + 10, choice.title, {
+        .text(x + 12, y + 35, choice.title, {
           fontFamily: 'monospace',
           fontSize: '10px',
           color: '#ffffff',
-          wordWrap: { width: cardW - 16 },
+          align: 'center',
+          wordWrap: { width: cardW - 24 },
         })
+        .setOrigin(0.5, 0)
+        .setX(x + cardW / 2)
         .setScrollFactor(0)
-        .setDepth(2);
+        .setDepth(3);
       const detail = this.add
-        .text(x + 8, y + 52, choice.detail, {
+        .text(x + 12, y + 91, choice.detail, {
           fontFamily: 'monospace',
           fontSize: '8px',
           color: '#b9a9a9',
-          wordWrap: { width: cardW - 16 },
+          align: 'center',
+          wordWrap: { width: cardW - 24 },
         })
+        .setOrigin(0.5, 0)
+        .setX(x + cardW / 2)
         .setScrollFactor(0)
-        .setDepth(2);
-      box.on('pointerup', () => this.pick(choice));
-      this.cardObjects.push(box, title, detail);
+        .setDepth(3);
+      hitTarget.on('pointerup', () => this.pick(choice));
+      this.cardObjects.push(title, detail);
     });
 
     const reroll = this.add
-      .text(LOGICAL_WIDTH / 2, y + 132, this.rerollsLeft > 0 ? '↻ Rerolar (1)' : '', {
+      .text(LOGICAL_WIDTH / 2, y + cardH + 14, this.rerollsLeft > 0 ? '↻ Rerolar (1)' : '', {
         fontFamily: 'monospace',
         fontSize: '9px',
         color: '#8fd0ff',

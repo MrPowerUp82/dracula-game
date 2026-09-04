@@ -29,8 +29,11 @@ export class DashSystem implements System {
     const lv = powerLevel(owned.def, owned.level);
     const len = Math.hypot(dx, dy) || 1;
     const dist = lv.speed ?? 80;
+    const fromX = p.pos.x;
+    const fromY = p.pos.y;
     p.pos.x += (dx / len) * dist;
     p.pos.y += (dy / len) * dist;
+    world.events.emit('player:dashed', { fromX, fromY, toX: p.pos.x, toY: p.pos.y });
 
     p.invulnUntilMs = Math.max(
       p.invulnUntilMs,

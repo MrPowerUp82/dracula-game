@@ -20,7 +20,7 @@ import { PhaserInputSource } from '../input/PhaserInputSource';
 import { MEMORIES, type MemoryDef } from '../data/memories';
 import type { EnemyArchetype } from '../data/enemies';
 import { enemyVisual } from '../data/memoryVisuals';
-import { AURA_TEX_SIZE } from '../config/gameConfig';
+import { AURA_TEX_SIZE, LOGICAL_HEIGHT, LOGICAL_WIDTH } from '../config/gameConfig';
 import { applyMetaToWorld } from '../save/applyToRun';
 import { runOutcome } from '../run/runEnd';
 import type { SaveDataV1 } from '../save/SaveData';
@@ -34,7 +34,7 @@ export class RunScene extends Phaser.Scene {
   private ended = false;
   private playerSprite!: Phaser.GameObjects.Sprite;
   private enemySprites: Phaser.GameObjects.Sprite[] = [];
-  private gemSprites: Phaser.GameObjects.Image[] = [];
+  private gemSprites: Phaser.GameObjects.Sprite[] = [];
   private attackSprites: Phaser.GameObjects.Sprite[] = [];
   private playerAnimOverride = '';
   private playerAnimOverrideUntil = 0;
@@ -43,6 +43,8 @@ export class RunScene extends Phaser.Scene {
   private pendingLevelUps = 0;
   private parallax!: ParallaxBackground;
   private telegraphs!: Phaser.GameObjects.Graphics;
+  private nightOverlay?: Phaser.GameObjects.Sprite;
+  private targetReticle?: Phaser.GameObjects.Sprite;
   private eventUnsubscribers: Array<() => void> = [];
 
   constructor() {
@@ -58,6 +60,8 @@ export class RunScene extends Phaser.Scene {
     this.gemSprites = [];
     this.attackSprites = [];
     this.bossSprite = undefined;
+    this.nightOverlay = undefined;
+    this.targetReticle = undefined;
     this.memory = (this.registry.get('selectedMemory') as MemoryDef | undefined) ?? MEMORIES[0];
 
     const seed = Math.floor(Math.random() * 0xffffffff) >>> 0;
@@ -95,6 +99,21 @@ export class RunScene extends Phaser.Scene {
     this.playerSprite = this.add.sprite(0, 0, hasDracula ? 'dracula-idle' : 'dev-player').setDepth(5);
     if (hasDracula) this.playerSprite.play('dracula-idle');
 
+    if (this.textures.exists('fx-dominion-of-night')) {
+      this.nightOverlay = this.add
+        .sprite(LOGICAL_WIDTH / 2, LOGICAL_HEIGHT / 2, 'fx-dominion-of-night')
+        .setDisplaySize(LOGICAL_WIDTH, LOGICAL_HEIGHT)
+        .setScrollFactor(0)
+        .setDepth(20)
+        .setAlpha(0.42)
+        .setVisible(false);
+      this.nightOverlay.play('fx-dominion-of-night');
+    }
+    if (this.textures.exists('ui-target-reticle')) {
+      this.targetReticle = this.add.sprite(0, 0, 'ui-target-reticle').setDepth(7).setAlpha(0.78).setVisible(false);
+      this.targetReticle.play('ui-target-reticle');
+    }
+
     this.debugText = this.add
       .text(6, 6, '', { fontFamily: 'monospace', fontSize: '10px', color: '#e8d0d0' })
       .setScrollFactor(0)
@@ -115,6 +134,19 @@ export class RunScene extends Phaser.Scene {
     this.eventUnsubscribers.push(this.world.events.on('player:levelup', () => {
       this.pendingLevelUps++;
       this.maybeOpenUpgrade();
+    }));
+    this.eventUnsubscribers.push(this.world.events.on('player:dashed', ({ fromX, fromY, toX, toY }) => {
+      if (!this.textures.exists('fx-mist-trail')) return;
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+      const trail = this.add
+        .sprite((fromX + toX) / 2, (fromY + toY) / 2, 'fx-mist-trail')
+        .setDepth(4)
+        .setRotation(Math.atan2(dy, dx) - Math.PI / 2)
+        .setScale(1, Math.max(1, Math.hypot(dx, dy) / 48))
+        .setAlpha(0.85);
+      trail.play('fx-mist-trail');
+      this.tweens.add({ targets: trail, alpha: 0, duration: 520, onComplete: () => trail.destroy() });
     }));
     this.eventUnsubscribers.push(this.world.events.on('boss:phase', () => {
       if (save?.settings.screenShake !== false) this.cameras.main.shake(180, 0.004);
@@ -148,6 +180,7 @@ export class RunScene extends Phaser.Scene {
     this.syncGems();
     this.syncAttacks();
     this.syncBoss();
+    this.syncPowerVisuals();
     this.parallax.update(this.world.camera.x);
 
     const p = this.world.player;
@@ -227,8 +260,18 @@ export class RunScene extends Phaser.Scene {
     this.world.pickups.forEachActive((g) => {
       let s = this.gemSprites[i];
       if (!s) {
-        s = this.add.image(0, 0, 'dev-gem').setDepth(2);
+        const key = this.textures.exists('pickup-blood-gem') ? 'pickup-blood-gem' : 'dev-gem';
+        s = this.add.sprite(0, 0, key).setDepth(2);
         this.gemSprites[i] = s;
+      }
+      if (this.textures.exists('pickup-blood-gem')) {
+        if (s.texture.key !== 'pickup-blood-gem') s.setTexture('pickup-blood-gem');
+        const anim = g.value >= 6
+          ? 'pickup-blood-gem-large'
+          : g.value >= 3
+            ? 'pickup-blood-gem-medium'
+            : 'pickup-blood-gem-small';
+        if (this.anims.exists(anim) && s.anims.getName() !== anim) s.play(anim, true);
       }
       s.setVisible(true).setPosition(g.pos.x, g.pos.y);
       i++;
@@ -240,15 +283,21 @@ export class RunScene extends Phaser.Scene {
     this.telegraphs.clear();
     let i = 0;
     this.world.attacks.forEachActive((a) => {
+      const spriteKey = this.textures.exists(a.spriteKey)
+        ? a.spriteKey
+        : a.motion === 'static' || a.motion === 'fixed'
+          ? 'dev-aura'
+          : 'dev-spear';
       let s = this.attackSprites[i];
       if (!s) {
-        s = this.add.sprite(0, 0, a.spriteKey).setDepth(4);
+        s = this.add.sprite(0, 0, spriteKey).setDepth(4);
         this.attackSprites[i] = s;
       }
-      if (s.texture.key !== a.spriteKey) s.setTexture(a.spriteKey);
-      if (this.anims.exists(a.spriteKey) && s.anims.getName() !== a.spriteKey) s.play(a.spriteKey, true);
+      if (s.texture.key !== spriteKey) s.setTexture(spriteKey);
+      if (this.anims.exists(spriteKey) && s.anims.getName() !== spriteKey) s.play(spriteKey, true);
       s.setVisible(true).setPosition(a.pos.x, a.pos.y);
-      s.setScale(a.spriteKey === 'dev-aura' ? (a.radius * 2) / AURA_TEX_SIZE : 1);
+      const areaSprite = spriteKey === 'dev-aura' || spriteKey === 'fx-blood-rain';
+      s.setScale(areaSprite ? (a.radius * 2) / AURA_TEX_SIZE : spriteKey === 'fx-wolf-pack' ? 0.8 : 1);
       s.setRotation(a.motion === 'linear' ? Math.atan2(a.vel.y, a.vel.x) : 0);
       const warning = a.ageMs < a.telegraphMs;
       s.setAlpha(warning ? 0.22 : 1);
@@ -286,17 +335,67 @@ export class RunScene extends Phaser.Scene {
     this.bossSprite.setAlpha(b.transitionMs > 0 ? 0.6 + Math.sin(b.transitionMs * 0.04) * 0.3 : 1);
   }
 
+  private syncPowerVisuals(): void {
+    this.nightOverlay?.setVisible(this.world.powers.has('night-domain'));
+    if (!this.targetReticle) return;
+    if (!this.world.powers.has('blood-spear')) {
+      this.targetReticle.setVisible(false);
+      return;
+    }
+    const px = this.world.player.pos.x;
+    const py = this.world.player.pos.y;
+    let target: { pos: { x: number; y: number } } | undefined = this.world.boss.active
+      && this.world.boss.phase !== 'intro'
+      ? this.world.boss
+      : undefined;
+    let best = target ? (target.pos.x - px) ** 2 + (target.pos.y - py) ** 2 : Infinity;
+    this.world.enemies.forEachActive((enemy) => {
+      const distance = (enemy.pos.x - px) ** 2 + (enemy.pos.y - py) ** 2;
+      if (distance < best) {
+        best = distance;
+        target = enemy;
+      }
+    });
+    if (!target) {
+      this.targetReticle.setVisible(false);
+      return;
+    }
+    this.targetReticle.setVisible(true).setPosition(target.pos.x, target.pos.y);
+  }
+
   private registerManifestAnimations(): void {
     const manifest = this.cache.json.get('sprite-manifest') as Record<string, { frameCount: number }> | undefined;
     if (!manifest) return;
+    const loopEnd: Record<string, number> = {
+      'fx-blood-rain': 5,
+      'fx-blood-spear': 3,
+      'fx-nosferatu-swarm': 5,
+      'fx-wolf-pack': 5,
+    };
     for (const [key, meta] of Object.entries(manifest)) {
-      if (meta.frameCount <= 1 || !this.textures.exists(key) || this.anims.exists(key)) continue;
+      if (key === 'pickup-blood-gem' || meta.frameCount <= 1 || !this.textures.exists(key) || this.anims.exists(key)) continue;
       this.anims.create({
         key,
-        frames: this.anims.generateFrameNumbers(key, { start: 0, end: meta.frameCount - 1 }),
+        frames: this.anims.generateFrameNumbers(key, { start: 0, end: loopEnd[key] ?? meta.frameCount - 1 }),
         frameRate: key.startsWith('fx-') ? 18 : key.startsWith('boss-') ? 8 : 10,
         repeat: -1,
       });
+    }
+    if (this.textures.exists('pickup-blood-gem')) {
+      const ranges = [
+        ['pickup-blood-gem-small', 0, 5],
+        ['pickup-blood-gem-medium', 6, 11],
+        ['pickup-blood-gem-large', 12, 17],
+      ] as const;
+      for (const [key, start, end] of ranges) {
+        if (this.anims.exists(key)) continue;
+        this.anims.create({
+          key,
+          frames: this.anims.generateFrameNumbers('pickup-blood-gem', { start, end }),
+          frameRate: 10,
+          repeat: -1,
+        });
+      }
     }
   }
 

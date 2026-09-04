@@ -3,6 +3,7 @@ export interface EventMap {
   'enemy:died': { x: number; y: number; xpValue: number };
   'player:levelup': { level: number };
   'player:damaged': { amount: number; hpRemaining: number };
+  'player:dashed': { fromX: number; fromY: number; toX: number; toY: number };
   'player:died': Record<string, never>;
   'stats:dirty': Record<string, never>;
   'boss:spawned': { defId: string };

@@ -12,7 +12,10 @@ describe('PowerSystem', () => {
     expect(world.attacks.activeCount).toBe(2);
     let orbit = 0;
     world.attacks.forEachActive((a) => {
-      if (a.motion === 'orbit' && a.ownerPowerId === 'bat-swarm') orbit++;
+      if (a.motion === 'orbit' && a.ownerPowerId === 'bat-swarm') {
+        expect(a.spriteKey).toBe('fx-bat-swarm');
+        orbit++;
+      }
     });
     expect(orbit).toBe(2);
   });
@@ -33,7 +36,10 @@ describe('PowerSystem', () => {
     new PowerSystem().update(world, 16);
     let aura = 0;
     world.attacks.forEachActive((a) => {
-      if (a.motion === 'static' && a.ownerPowerId === 'blood-rain') aura++;
+      if (a.motion === 'static' && a.ownerPowerId === 'blood-rain') {
+        expect(a.spriteKey).toBe('fx-blood-rain');
+        aura++;
+      }
     });
     expect(aura).toBe(1);
   });
@@ -53,7 +59,10 @@ describe('PowerSystem', () => {
     new PowerSystem().update(world, 16); // dispara no primeiro frame (timer começa em 0)
     let proj = 0;
     world.attacks.forEachActive((a) => {
-      if (a.motion === 'linear' && a.ownerPowerId === 'blood-spear') proj++;
+      if (a.motion === 'linear' && a.ownerPowerId === 'blood-spear') {
+        expect(a.spriteKey).toBe('fx-blood-spear');
+        proj++;
+      }
     });
     expect(proj).toBeGreaterThanOrEqual(1);
   });
@@ -82,5 +91,17 @@ describe('PowerSystem', () => {
       if (a.ownerPowerId === 'blood-spear' && a.vel.x > 0) aimedAtBoss = true;
     });
     expect(aimedAtBoss).toBe(true);
+  });
+
+  it.each([
+    ['wolf-pack', 'fx-wolf-pack'],
+    ['nosferatu', 'fx-nosferatu-swarm'],
+  ])('%s usa seu spritesheet dedicado', (powerId, spriteKey) => {
+    const world = createWorld(1);
+    world.powers.equip(powerId);
+    new PowerSystem().update(world, 16);
+    world.attacks.forEachActive((attack) => {
+      expect(attack.spriteKey).toBe(spriteKey);
+    });
   });
 });
